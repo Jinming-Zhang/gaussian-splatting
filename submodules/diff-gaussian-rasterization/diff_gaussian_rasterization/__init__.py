@@ -177,7 +177,7 @@ class GaussianRasterizer(nn.Module):
     def forward(self, means3D, means2D, opacities, shs = None, colors_precomp = None, scales = None, rotations = None, cov3D_precomp = None):
         global firstRun
         if firstRun:
-            print('Running ORIGINAL version of gaussian rasterizer.')
+            print('Running LOG version of gaussian rasterizer.')
             firstRun = False
         
         raster_settings = self.raster_settings
