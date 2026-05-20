@@ -368,13 +368,6 @@ __global__ void __launch_bounds__(BLOCK_X *BLOCK_Y)
         continue;
       }
 
-      static bool initialized = false;
-      if (!initialized)
-      {
-        *minFeatureVal = std::numeric_limits<float>::lowest();
-        *maxFeatureVal = std::numeric_limits<float>::max();
-        initialized = true;
-      }
       // Eq. (3) from 3D Gaussian splatting paper.
       for (int ch = 0; ch < CHANNELS; ch++)
       {
@@ -390,7 +383,10 @@ __global__ void __launch_bounds__(BLOCK_X *BLOCK_Y)
         }
         // (0->1 : 1->e, after exp)
         // (exp(norm(output value of spherical harmonics, 0, 1)) - 1) / (e - 1)
-        float linearVal = LogHelper::Log2Linear(featureVal);
+        float tmp = featureVal/2.0f;
+        float linearVal = (expf(tmp)-1) / (2.71828f - 1);
+        
+        // float linearVal = LogHelper::Log2Linear(featureVal);
         C[ch] += linearVal * alpha * T;
       }
 
