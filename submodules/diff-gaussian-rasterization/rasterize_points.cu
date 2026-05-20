@@ -87,8 +87,12 @@ RasterizeGaussiansCUDA(
   std::function<char *(size_t)> binningFunc = resizeFunctional(binningBuffer);
   std::function<char *(size_t)> imgFunc = resizeFunctional(imgBuffer);
 
-  float *minFVal;
-  float *maxFVal;
+  // Replace the nullptr declarations with:
+  torch::Tensor minFValTensor = torch::full({1}, std::numeric_limits<float>::max(), float_opts);
+  torch::Tensor maxFValTensor = torch::full({1}, std::numeric_limits<float>::lowest(), float_opts);
+  float *minFVal = minFValTensor.data_ptr<float>();
+  float *maxFVal = maxFValTensor.data_ptr<float>();
+
   int rendered = 0;
   if (P != 0)
   {
@@ -127,7 +131,7 @@ RasterizeGaussiansCUDA(
         minFVal,
         maxFVal);
   }
-  std::cout << "Min feature value: " << *minFVal << ", Max feature value: " << *maxFVal << std::endl;
+  std::cout << "Min feature value: " << minFValTensor.item<float>() << ", Max feature value: " << maxFValTensor.item<float>() << std::endl;
   return std::make_tuple(rendered, out_color, radii, geomBuffer, binningBuffer, imgBuffer, out_invdepth);
 }
 
