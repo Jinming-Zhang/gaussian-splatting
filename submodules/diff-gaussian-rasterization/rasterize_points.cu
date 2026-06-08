@@ -55,7 +55,8 @@ RasterizeGaussiansCUDA(
     const torch::Tensor &campos,
     const bool prefiltered,
     const bool antialiasing,
-    const bool debug)
+    const bool debug,
+    const int render_mode)
 {
   if (means3D.ndimension() != 2 || means3D.size(1) != 3)
   {
@@ -129,8 +130,10 @@ RasterizeGaussiansCUDA(
         radii.contiguous().data<int>(),
         debug,
         minFVal,
-        maxFVal);
+        maxFVal,
+        render_mode);
   }
+  printf("Render mode %d\n", render_mode);
   std::cout << "Min feature value: " << minFValTensor.item<float>() << ", Max feature value: " << maxFValTensor.item<float>() << std::endl;
   return std::make_tuple(rendered, out_color, radii, geomBuffer, binningBuffer, imgBuffer, out_invdepth);
 }

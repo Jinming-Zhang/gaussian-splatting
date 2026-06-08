@@ -221,7 +221,8 @@ int CudaRasterizer::Rasterizer::forward(
     int *radii,
     bool debug,
     float *minFeatureVal,
-    float *maxFeatureVal)
+    float *maxFeatureVal,
+    const int render_mode)
 {
   const float focal_y = height / (2.0f * tan_fovy);
   const float focal_x = width / (2.0f * tan_fovx);
@@ -340,7 +341,8 @@ int CudaRasterizer::Rasterizer::forward(
                  geomState.depths,
                  depth,
                  minFeatureVal,
-                 maxFeatureVal),
+                 maxFeatureVal,
+                 render_mode),
              debug)
 
   return num_rendered;

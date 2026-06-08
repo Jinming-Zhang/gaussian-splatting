@@ -64,7 +64,8 @@ namespace FORWARD
       float *depths,
       float *depth,
       float *minFeatureVal,
-      float *maxFeatureVal);
+      float *maxFeatureVal,
+      const int render_mode);
 }
 
 #endif

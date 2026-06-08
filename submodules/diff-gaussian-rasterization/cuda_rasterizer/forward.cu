@@ -17,6 +17,8 @@
 #include <cooperative_groups/reduce.h>
 namespace cg = cooperative_groups;
 
+__device__ static int RENDER_MODE = 0;
+
 // Forward method for converting the input spherical harmonics
 // coefficients of each Gaussian to a simple RGB color.
 __device__ glm::vec3 computeColorFromSH(int idx, int deg, int max_coeffs, const glm::vec3 *means, glm::vec3 campos, const float *shs, bool *clamped)
@@ -29,46 +31,112 @@ __device__ glm::vec3 computeColorFromSH(int idx, int deg, int max_coeffs, const 
   dir = dir / glm::length(dir);
 
   glm::vec3 *sh = ((glm::vec3 *)shs) + idx * max_coeffs;
-  glm::vec3 result = SH_C0 * sh[0];
+  glm::vec3 result{0.0f};
 
-  if (deg > 0)
+  switch (RENDER_MODE)
   {
-    float x = dir.x;
-    float y = dir.y;
-    float z = dir.z;
-    result = result - SH_C1 * y * sh[1] + SH_C1 * z * sh[2] - SH_C1 * x * sh[3];
-
-    if (deg > 1)
+  case 0:
+  {
+    result = SH_C0 * sh[0];
+    if (deg > 0)
     {
-      float xx = x * x, yy = y * y, zz = z * z;
-      float xy = x * y, yz = y * z, xz = x * z;
-      result = result +
-               SH_C2[0] * xy * sh[4] +
-               SH_C2[1] * yz * sh[5] +
-               SH_C2[2] * (2.0f * zz - xx - yy) * sh[6] +
-               SH_C2[3] * xz * sh[7] +
-               SH_C2[4] * (xx - yy) * sh[8];
+      float x = dir.x;
+      float y = dir.y;
+      float z = dir.z;
+      result = result - SH_C1 * y * sh[1] + SH_C1 * z * sh[2] - SH_C1 * x * sh[3];
 
-      if (deg > 2)
+      if (deg > 1)
       {
+        float xx = x * x, yy = y * y, zz = z * z;
+        float xy = x * y, yz = y * z, xz = x * z;
         result = result +
-                 SH_C3[0] * y * (3.0f * xx - yy) * sh[9] +
-                 SH_C3[1] * xy * z * sh[10] +
-                 SH_C3[2] * y * (4.0f * zz - xx - yy) * sh[11] +
-                 SH_C3[3] * z * (2.0f * zz - 3.0f * xx - 3.0f * yy) * sh[12] +
-                 SH_C3[4] * x * (4.0f * zz - xx - yy) * sh[13] +
-                 SH_C3[5] * z * (xx - yy) * sh[14] +
-                 SH_C3[6] * x * (xx - 3.0f * yy) * sh[15];
+                 SH_C2[0] * xy * sh[4] +
+                 SH_C2[1] * yz * sh[5] +
+                 SH_C2[2] * (2.0f * zz - xx - yy) * sh[6] +
+                 SH_C2[3] * xz * sh[7] +
+                 SH_C2[4] * (xx - yy) * sh[8];
+
+        if (deg > 2)
+        {
+          result = result +
+                   SH_C3[0] * y * (3.0f * xx - yy) * sh[9] +
+                   SH_C3[1] * xy * z * sh[10] +
+                   SH_C3[2] * y * (4.0f * zz - xx - yy) * sh[11] +
+                   SH_C3[3] * z * (2.0f * zz - 3.0f * xx - 3.0f * yy) * sh[12] +
+                   SH_C3[4] * x * (4.0f * zz - xx - yy) * sh[13] +
+                   SH_C3[5] * z * (xx - yy) * sh[14] +
+                   SH_C3[6] * x * (xx - 3.0f * yy) * sh[15];
+        }
       }
     }
-  }
-  result += 0.5f;
+    result += 0.5f;
 
-  // RGB colors are clamped to positive values. If values are
-  // clamped, we need to keep track of this for the backward pass.
-  clamped[3 * idx + 0] = (result.x < 0);
-  clamped[3 * idx + 1] = (result.y < 0);
-  clamped[3 * idx + 2] = (result.z < 0);
+    // RGB colors are clamped to positive values. If values are
+    // clamped, we need to keep track of this for the backward pass.
+    clamped[3 * idx + 0] = (result.x < 0);
+    clamped[3 * idx + 1] = (result.y < 0);
+    clamped[3 * idx + 2] = (result.z < 0);
+  }
+  break;
+  case 1: // reflectance
+  {
+    result = SH_C0 * sh[0];
+    result += 0.5f;
+
+    // RGB colors are clamped to positive values. If values are
+    // clamped, we need to keep track of this for the backward pass.
+    clamped[3 * idx + 0] = (result.x < 0);
+    clamped[3 * idx + 1] = (result.y < 0);
+    clamped[3 * idx + 2] = (result.z < 0);
+    return glm::max(result, 0.0f);
+  }
+  break;
+  case 2: // shading
+  {
+    if (deg > 0)
+    {
+      float x = dir.x;
+      float y = dir.y;
+      float z = dir.z;
+      result = result - SH_C1 * y * sh[1] + SH_C1 * z * sh[2] - SH_C1 * x * sh[3];
+
+      if (deg > 1)
+      {
+        float xx = x * x, yy = y * y, zz = z * z;
+        float xy = x * y, yz = y * z, xz = x * z;
+        result = result +
+                 SH_C2[0] * xy * sh[4] +
+                 SH_C2[1] * yz * sh[5] +
+                 SH_C2[2] * (2.0f * zz - xx - yy) * sh[6] +
+                 SH_C2[3] * xz * sh[7] +
+                 SH_C2[4] * (xx - yy) * sh[8];
+
+        if (deg > 2)
+        {
+          result = result +
+                   SH_C3[0] * y * (3.0f * xx - yy) * sh[9] +
+                   SH_C3[1] * xy * z * sh[10] +
+                   SH_C3[2] * y * (4.0f * zz - xx - yy) * sh[11] +
+                   SH_C3[3] * z * (2.0f * zz - 3.0f * xx - 3.0f * yy) * sh[12] +
+                   SH_C3[4] * x * (4.0f * zz - xx - yy) * sh[13] +
+                   SH_C3[5] * z * (xx - yy) * sh[14] +
+                   SH_C3[6] * x * (xx - 3.0f * yy) * sh[15];
+        }
+      }
+    }
+    result += 0.5f;
+
+    // RGB colors are clamped to positive values. If values are
+    // clamped, we need to keep track of this for the backward pass.
+    clamped[3 * idx + 0] = (result.x < 0);
+    clamped[3 * idx + 1] = (result.y < 0);
+    clamped[3 * idx + 2] = (result.z < 0);
+    return glm::max(result, 0.0f);
+  }
+  break;
+  default:
+    break;
+  }
   return glm::max(result, 0.0f);
 }
 
@@ -286,7 +354,8 @@ __global__ void __launch_bounds__(BLOCK_X *BLOCK_Y)
         const float *__restrict__ depths,
         float *__restrict__ invdepth,
         float *__restrict__ minFeatureVal,
-        float *__restrict__ maxFeatureVal)
+        float *__restrict__ maxFeatureVal,
+        const int render_mode)
 {
   // Identify current tile and associated min/max pixel range.
   auto block = cg::this_thread_block();
@@ -381,11 +450,10 @@ __global__ void __launch_bounds__(BLOCK_X *BLOCK_Y)
         {
           *maxFeatureVal = featureVal;
         }
-        // (0->1 : 1->e, after exp)
-        // (exp(norm(output value of spherical harmonics, 0, 1)) - 1) / (e - 1)
-        float tmp = featureVal/2.0f;
-        float linearVal = (expf(tmp)-1) / (2.71828f - 1);
-        
+        // log conversion
+        float tmp = featureVal / 2.0f;
+        float linearVal = (expf(tmp) - 1) / (2.71828f - 1);
+
         // float linearVal = LogHelper::Log2Linear(featureVal);
         C[ch] += linearVal * alpha * T;
       }
@@ -430,8 +498,10 @@ void FORWARD::render(
     float *depths,
     float *depth,
     float *minFeatureVal,
-    float *maxFeatureVal)
+    float *maxFeatureVal,
+    const int render_mode)
 {
+  cudaMemcpyToSymbol(RENDER_MODE, &render_mode, sizeof(int));
   renderCUDA<NUM_CHANNELS><<<grid, block>>>(
       ranges,
       point_list,
@@ -446,7 +516,8 @@ void FORWARD::render(
       depths,
       depth,
       minFeatureVal,
-      maxFeatureVal);
+      maxFeatureVal,
+      render_mode);
 }
 
 void FORWARD::preprocess(int P, int D, int M,

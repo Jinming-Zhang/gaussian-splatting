@@ -54,7 +54,8 @@ namespace CudaRasterizer
 			int* radii = nullptr,
 			bool debug = false,
       float* minFeatureVal = nullptr,
-      float* maxFeatureVal = nullptr);
+      float* maxFeatureVal = nullptr,
+      const int render_mode = 0);
 
 		static void backward(
 			const int P, int D, int M, int R,
