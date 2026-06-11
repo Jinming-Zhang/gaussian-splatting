@@ -451,11 +451,11 @@ __global__ void __launch_bounds__(BLOCK_X *BLOCK_Y)
           *maxFeatureVal = featureVal;
         }
         // log conversion
-        float tmp = featureVal / 2.0f;
-        float linearVal = (expf(tmp) - 1) / (2.71828f - 1);
+        // float tmp = featureVal / 2.0f;
+        // float linearVal = (expf(tmp) - 1) / (2.71828f - 1);
 
-        // float linearVal = LogHelper::Log2Linear(featureVal);
-        C[ch] += linearVal * alpha * T;
+        // C[ch] += linearVal * alpha * T;
+        C[ch] += featureVal * alpha * T;
       }
 
       if (invdepth)
