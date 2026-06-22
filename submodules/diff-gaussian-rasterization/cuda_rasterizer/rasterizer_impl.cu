@@ -161,6 +161,7 @@ CudaRasterizer::GeometryState CudaRasterizer::GeometryState::fromChunk(char *&ch
   obtain(chunk, geom.means2D, P, 128);
   obtain(chunk, geom.cov3D, P * 6, 128);
   obtain(chunk, geom.conic_opacity, P, 128);
+  obtain(chunk, geom.reflect_factor, P, 128);
   obtain(chunk, geom.rgb, P * 3, 128);
   obtain(chunk, geom.tiles_touched, P, 128);
   cub::DeviceScan::InclusiveSum(nullptr, geom.scan_size, geom.tiles_touched, geom.tiles_touched, P);
@@ -206,6 +207,7 @@ int CudaRasterizer::Rasterizer::forward(
     const float *shs,
     const float *colors_precomp,
     const float *opacities,
+		const float* reflect_factors,
     const float *scales,
     const float scale_modifier,
     const float *rotations,
@@ -227,6 +229,7 @@ int CudaRasterizer::Rasterizer::forward(
   const float focal_y = height / (2.0f * tan_fovy);
   const float focal_x = width / (2.0f * tan_fovx);
 
+  // allocate memory for all the gaussians struct
   size_t chunk_size = required<GeometryState>(P);
   char *chunkptr = geometryBuffer(chunk_size);
   GeometryState geomState = GeometryState::fromChunk(chunkptr, P);
@@ -257,6 +260,7 @@ int CudaRasterizer::Rasterizer::forward(
                  scale_modifier,
                  (glm::vec4 *)rotations,
                  opacities,
+                 reflect_factors,
                  shs,
                  geomState.clamped,
                  cov3D_precomp,
@@ -272,6 +276,7 @@ int CudaRasterizer::Rasterizer::forward(
                  geomState.cov3D,
                  geomState.rgb,
                  geomState.conic_opacity,
+                 geomState.reflect_factor,
                  tile_grid,
                  geomState.tiles_touched,
                  prefiltered,
@@ -334,6 +339,7 @@ int CudaRasterizer::Rasterizer::forward(
                  geomState.means2D,
                  feature_ptr,
                  geomState.conic_opacity,
+                 geomState.reflect_factor,
                  imgState.accum_alpha,
                  imgState.n_contrib,
                  background,
@@ -358,6 +364,7 @@ void CudaRasterizer::Rasterizer::backward(
     const float *shs,
     const float *colors_precomp,
     const float *opacities,
+		const float* reflect_factors,
     const float *scales,
     const float scale_modifier,
     const float *rotations,
@@ -375,6 +382,7 @@ void CudaRasterizer::Rasterizer::backward(
     float *dL_dmean2D,
     float *dL_dconic,
     float *dL_dopacity,
+		float* dL_dreflect_factor,
     float *dL_dcolor,
     float *dL_dinvdepth,
     float *dL_dmean3D,
