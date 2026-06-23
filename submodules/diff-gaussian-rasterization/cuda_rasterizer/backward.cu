@@ -467,6 +467,7 @@ renderCUDA(
 	float3* __restrict__ dL_dmean2D,
 	float4* __restrict__ dL_dconic2D,
 	float* __restrict__ dL_dopacity,
+	float* __restrict__ dL_dreflect_factor,
 	float* __restrict__ dL_dcolors,
 	float* __restrict__ dL_dinvdepths
 )
@@ -488,6 +489,7 @@ renderCUDA(
 	bool done = !inside;
 	int toDo = range.y - range.x;
 
+  // __shared__ means shared by threads within the same block
 	__shared__ int collected_id[BLOCK_SIZE];
 	__shared__ float2 collected_xy[BLOCK_SIZE];
 	__shared__ float4 collected_conic_opacity[BLOCK_SIZE];
@@ -728,6 +730,7 @@ void BACKWARD::render(
 	float3* dL_dmean2D,
 	float4* dL_dconic2D,
 	float* dL_dopacity,
+  float* dL_dreflect_factor,
 	float* dL_dcolors,
 	float* dL_dinvdepths)
 {
@@ -747,6 +750,7 @@ void BACKWARD::render(
 		dL_dmean2D,
 		dL_dconic2D,
 		dL_dopacity,
+    dL_dreflect_factor,
 		dL_dcolors,
 		dL_dinvdepths
 		);

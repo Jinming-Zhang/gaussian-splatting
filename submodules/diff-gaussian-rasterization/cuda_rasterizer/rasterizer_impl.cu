@@ -430,6 +430,7 @@ void CudaRasterizer::Rasterizer::backward(
                  (float3 *)dL_dmean2D,
                  (float4 *)dL_dconic,
                  dL_dopacity,
+                 dL_dreflect_factor,
                  dL_dcolor,
                  dL_dinvdepth),
              debug);
