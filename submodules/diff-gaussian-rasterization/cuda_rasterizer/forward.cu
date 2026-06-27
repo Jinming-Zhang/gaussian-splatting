@@ -241,7 +241,7 @@ __global__ void preprocessCUDA(int P, int D, int M,
                                float *cov3Ds,
                                float *rgb,
                                float4 *conic_opacity,
-                               float4 *out_reflect_factor,
+                               float *out_reflect_factor,
                                const dim3 grid,
                                uint32_t *tiles_touched,
                                bool prefiltered,
@@ -334,7 +334,7 @@ __global__ void preprocessCUDA(int P, int D, int M,
   float r_f = reflect_factors[idx];
 
   conic_opacity[idx] = {conic.x, conic.y, conic.z, opacity * h_convolution_scaling};
-  out_reflect_factor[idx] = {r_f, 2.0f, 3.0f, 4.0f};
+  out_reflect_factor[idx] = 1.234f;
   tiles_touched[idx] = (rect_max.y - rect_min.y) * (rect_max.x - rect_min.x);
 }
 
@@ -350,7 +350,7 @@ __global__ void __launch_bounds__(BLOCK_X *BLOCK_Y)
         const float2 *__restrict__ points_xy_image,
         const float *__restrict__ features,
         const float4 *__restrict__ conic_opacity,
-        const float4 *__restrict__ reflect_factor,
+        const float *__restrict__ reflect_factor,
         float *__restrict__ final_T,
         uint32_t *__restrict__ n_contrib,
         const float *__restrict__ bg_color,
@@ -384,7 +384,7 @@ __global__ void __launch_bounds__(BLOCK_X *BLOCK_Y)
   __shared__ int collected_id[BLOCK_SIZE];
   __shared__ float2 collected_xy[BLOCK_SIZE];
   __shared__ float4 collected_conic_opacity[BLOCK_SIZE];
-  __shared__ float4 collected_reflect_factor[BLOCK_SIZE];
+  __shared__ float collected_reflect_factor[BLOCK_SIZE];
 
   // Initialize helper variables
   float T = 1.0f;
@@ -425,7 +425,7 @@ __global__ void __launch_bounds__(BLOCK_X *BLOCK_Y)
       float2 xy = collected_xy[j];
       float2 d = {xy.x - pixf.x, xy.y - pixf.y};
       float4 con_o = collected_conic_opacity[j];
-      float4 r_f = collected_reflect_factor[j];
+      float r_f = collected_reflect_factor[j];
       float power = -0.5f * (con_o.x * d.x * d.x + con_o.z * d.y * d.y) - con_o.y * d.x * d.y;
       if (power > 0.0f)
         continue;
@@ -457,8 +457,8 @@ __global__ void __launch_bounds__(BLOCK_X *BLOCK_Y)
         {
           *maxFeatureVal = featureVal;
         }
-        *minFeatureVal = r_f.y;
-        *maxFeatureVal = r_f.z;
+        *minFeatureVal = r_f;
+        *maxFeatureVal = r_f;
         // log conversion
         // float tmp = featureVal / 2.0f;
         // float linearVal = (expf(tmp) - 1) / (2.71828f - 1);
@@ -500,7 +500,7 @@ void FORWARD::render(
     const float2 *means2D,
     const float *colors,
     const float4 *conic_opacity,
-    const float4 *reflect_factor,
+    const float *reflect_factor,
     float *final_T,
     uint32_t *n_contrib,
     const float *bg_color,
@@ -554,7 +554,7 @@ void FORWARD::preprocess(int P, int D, int M,
                          float *cov3Ds,
                          float *rgb,
                          float4 *conic_opacity,
-                         float4 *out_reflect_factor,
+                         float *out_reflect_factor,
                          const dim3 grid,
                          uint32_t *tiles_touched,
                          bool prefiltered,
