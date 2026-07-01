@@ -18,6 +18,7 @@
 namespace cg = cooperative_groups;
 
 __device__ static int RENDER_MODE = 0;
+__device__ static bool TRACK_SH_RANGE = false;
 
 // Forward method for converting the input spherical harmonics
 // coefficients of each Gaussian to a simple RGB color.
@@ -448,23 +449,27 @@ __global__ void __launch_bounds__(BLOCK_X *BLOCK_Y)
       for (int ch = 0; ch < CHANNELS; ch++)
       {
         // C[ch] += features[collected_id[j] * CHANNELS + ch] * alpha * T;
-        float featureVal = features[collected_id[j] * CHANNELS + ch]; // check the original range of value (min, max)
-        if (featureVal < *minFeatureVal)
+        float featureVal = features[collected_id[j] * CHANNELS + ch]; 
+        if (TRACK_SH_RANGE)
         {
-          *minFeatureVal = featureVal;
+          if (featureVal < *minFeatureVal)
+          {
+            *minFeatureVal = featureVal;
+          }
+          else if (featureVal > *maxFeatureVal)
+          {
+            *maxFeatureVal = featureVal;
+          }
+          *minFeatureVal = r_f;
+          *maxFeatureVal = r_f;
         }
-        else if (featureVal > *maxFeatureVal)
-        {
-          *maxFeatureVal = featureVal;
-        }
-        *minFeatureVal = r_f;
-        *maxFeatureVal = r_f;
+
         // log conversion
         // float tmp = featureVal / 2.0f;
         // float linearVal = (expf(tmp) - 1) / (2.71828f - 1);
 
         // C[ch] += linearVal * alpha * T;
-        C[ch] += featureVal * alpha * T;
+        C[ch] += r_f * featureVal * alpha * T;
       }
 
       if (invdepth)

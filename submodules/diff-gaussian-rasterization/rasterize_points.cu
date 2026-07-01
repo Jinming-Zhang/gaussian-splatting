@@ -96,6 +96,8 @@ RasterizeGaussiansCUDA(
   float *maxFVal = maxFValTensor.data_ptr<float>();
 
   int rendered = 0;
+
+  std::cout << "r_f in value:" << reflect_factor[0].item<float>() << std::endl;
   if (P != 0)
   {
     int M = 0;
@@ -135,7 +137,7 @@ RasterizeGaussiansCUDA(
         maxFVal,
         render_mode);
   }
-  printf("Render mode %d\n", render_mode);
+  // printf("Render mode %d\n", render_mode);
   std::cout << "Min feature value: " << minFValTensor.item<float>() << ", Max feature value: " << maxFValTensor.item<float>() << std::endl;
   // std::cout << "number of gaussians:"<< P << std::endl;
   return std::make_tuple(rendered, out_color, radii, geomBuffer, binningBuffer, imgBuffer, out_invdepth);
