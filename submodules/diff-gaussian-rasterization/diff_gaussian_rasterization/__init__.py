@@ -189,6 +189,7 @@ class GaussianRasterizer(nn.Module):
             firstRun = False
         
         raster_settings = self.raster_settings
+        print(torch.max(reflect_factor))
 
         if (shs is None and colors_precomp is None) or (shs is not None and colors_precomp is not None):
             raise Exception('Please provide excatly one of either SHs or precomputed colors!')
