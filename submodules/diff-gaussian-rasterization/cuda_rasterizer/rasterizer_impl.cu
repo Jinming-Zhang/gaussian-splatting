@@ -10,6 +10,7 @@
  */
 
 #include "rasterizer_impl.h"
+#include <set>
 #include <iostream>
 #include <fstream>
 #include <algorithm>
@@ -137,6 +138,26 @@ __global__ void identifyTileRanges(int L, uint64_t *point_list_keys, uint2 *rang
     ranges[currtile].y = L;
 }
 
+// Assign a per-Gaussian group id derived from its Mean3D world-space cell.
+// Two Gaussians whose means fall in the same unit (1x1x1) cell get the same id.
+// Cell coords are packed as 10 bits per axis biased by +512, so axis range is [-512, 511].
+__global__ void computeGridGroupIds(int P, const float3 *means3D, int *group_ids)
+{
+  auto idx = cg::this_grid().thread_rank();
+  if (idx >= P)
+    return;
+
+  float3 p = means3D[idx];
+  int ix = __float2int_rd(p.x);
+  int iy = __float2int_rd(p.y);
+  int iz = __float2int_rd(p.z);
+
+  uint32_t bx = static_cast<uint32_t>(ix + 512) & 0x3FFu;
+  uint32_t by = static_cast<uint32_t>(iy + 512) & 0x3FFu;
+  uint32_t bz = static_cast<uint32_t>(iz + 512) & 0x3FFu;
+  group_ids[idx] = static_cast<int>(bx | (by << 10) | (bz << 20));
+}
+
 // Mark Gaussians as visible/invisible, based on view frustum testing
 void CudaRasterizer::Rasterizer::markVisible(
     int P,
@@ -207,7 +228,7 @@ int CudaRasterizer::Rasterizer::forward(
     const float *shs,
     const float *colors_precomp,
     const float *opacities,
-		const float* reflect_factors,
+    const float *reflect_factors,
     const float *scales,
     const float scale_modifier,
     const float *rotations,
@@ -364,7 +385,8 @@ void CudaRasterizer::Rasterizer::backward(
     const float *shs,
     const float *colors_precomp,
     const float *opacities,
-		const float* reflect_factors,
+    const float *reflect_factors,
+    // const int ** gaussianNeighbors,
     const float *scales,
     const float scale_modifier,
     const float *rotations,
@@ -382,7 +404,7 @@ void CudaRasterizer::Rasterizer::backward(
     float *dL_dmean2D,
     float *dL_dconic,
     float *dL_dopacity,
-		float* dL_dreflect_factor,
+    float *dL_dreflect_factor,
     float *dL_dcolor,
     float *dL_dinvdepth,
     float *dL_dmean3D,
@@ -407,6 +429,20 @@ void CudaRasterizer::Rasterizer::backward(
 
   const dim3 tile_grid((width + BLOCK_X - 1) / BLOCK_X, (height + BLOCK_Y - 1) / BLOCK_Y, 1);
   const dim3 block(BLOCK_X, BLOCK_Y, 1);
+
+  // const std::map<std::tuple<int, int, int>, std::vector<int>> &gaussianGroups = GroupGaussians(means3D, P);
+  // *dL_dreflect_factor = gaussianGroups.size();
+  // dL_dreflect_factor[0] = 0.123f;
+  // Group Gaussians by their Mean3D cell in a unit (1x1x1) world-space grid.
+  // Scratch buffer of size P; freed before returning.
+  // int *group_ids = nullptr;
+  // CHECK_CUDA(cudaMalloc(&group_ids, sizeof(int) * P), debug);
+  // {
+  //   const int threads = 256;
+  //   const int blocks = (P + threads - 1) / threads;
+  //   computeGridGroupIds<<<blocks, threads>>>(P, (const float3 *)means3D, group_ids);
+  //   CHECK_CUDA(, debug);
+  // }
 
   // Compute loss gradients w.r.t. 2D mean position, conic matrix,
   // opacity and RGB of Gaussians from per-pixel loss gradients.
@@ -466,4 +502,6 @@ void CudaRasterizer::Rasterizer::backward(
                                   (glm::vec4 *)dL_drot,
                                   antialiasing),
              debug);
+
+  // CHECK_CUDA(cudaFree(group_ids), debug);
 }

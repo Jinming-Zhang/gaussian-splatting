@@ -635,6 +635,8 @@ renderCUDA(
 
 			// Update gradients w.r.t. opacity of the Gaussian
 			atomicAdd(&(dL_dopacity[global_id]), G * dL_dalpha);
+      dL_dreflect_factor[global_id] = 0.123f;
+			// atomicAdd(&(dL_dreflect_factor[global_id]), 0.123f);
 		}
 	}
 }

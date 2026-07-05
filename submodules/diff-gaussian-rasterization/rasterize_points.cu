@@ -24,6 +24,12 @@
 #include <string>
 #include <functional>
 
+#include <thrust/device_vector.h>
+#include "gaussiansGrouper.h"
+#include <map>
+#include <tuple>
+#include <vector>
+
 std::function<char *(size_t N)> resizeFunctional(torch::Tensor &t)
 {
   auto lambda = [&t](size_t N)
@@ -175,6 +181,24 @@ RasterizeGaussiansBackwardCUDA(
   const int H = dL_dout_color.size(1);
   const int W = dL_dout_color.size(2);
 
+  const std::map<std::tuple<int, int, int>, std::vector<int>> &gaussianGroups = GroupGaussians(means3D);
+  int noKeys = gaussianGroups.size();
+
+  std::vector<int *> hostGroupPtrs;
+  hostGroupPtrs.reserve(noKeys);
+  for (const auto &kv : gaussianGroups)
+  {
+    const std::vector<int> &indices = kv.second;
+    int *devPtr = nullptr;
+    size_t bytes = indices.size() * sizeof(int);
+    cudaMalloc(&devPtr, bytes);
+    cudaMemcpy(devPtr, indices.data(), bytes, cudaMemcpyHostToDevice);
+    hostGroupPtrs.push_back(devPtr);
+  }
+
+  int **devGroupPtrs = nullptr;
+  cudaMalloc(&devGroupPtrs, noKeys * sizeof(int *));
+  cudaMemcpy(devGroupPtrs, hostGroupPtrs.data(), noKeys * sizeof(int *), cudaMemcpyHostToDevice);
   int M = 0;
   if (sh.size(0) != 0)
   {
@@ -242,6 +266,15 @@ RasterizeGaussiansBackwardCUDA(
                                          antialiasing,
                                          debug);
   }
+  float check = dL_dreflect_factor[0][0].item<float>();
+  std::cout<<"first item of d_drf value: "<<check<<std::endl;
+  // std::cout
+
+  for (int *devPtr : hostGroupPtrs)
+  {
+    cudaFree(devPtr);
+  }
+  cudaFree(devGroupPtrs);
 
   return std::make_tuple(dL_dmeans2D, dL_dcolors, dL_dopacity, dL_dreflect_factor,dL_dmeans3D, dL_dcov3D, dL_dsh, dL_dscales, dL_drotations);
 }
