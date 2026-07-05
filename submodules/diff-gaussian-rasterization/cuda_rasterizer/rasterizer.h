@@ -67,6 +67,7 @@ namespace CudaRasterizer
 			const float* colors_precomp,
 			const float* opacities,
 			const float* reflect_factors,
+      int ** gaussianNeighbors,
 			const float* scales,
 			const float scale_modifier,
 			const float* rotations,

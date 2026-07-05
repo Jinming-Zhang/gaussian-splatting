@@ -386,7 +386,7 @@ void CudaRasterizer::Rasterizer::backward(
     const float *colors_precomp,
     const float *opacities,
     const float *reflect_factors,
-    // const int ** gaussianNeighbors,
+    int ** gaussianNeighbors,
     const float *scales,
     const float scale_modifier,
     const float *rotations,
@@ -430,20 +430,6 @@ void CudaRasterizer::Rasterizer::backward(
   const dim3 tile_grid((width + BLOCK_X - 1) / BLOCK_X, (height + BLOCK_Y - 1) / BLOCK_Y, 1);
   const dim3 block(BLOCK_X, BLOCK_Y, 1);
 
-  // const std::map<std::tuple<int, int, int>, std::vector<int>> &gaussianGroups = GroupGaussians(means3D, P);
-  // *dL_dreflect_factor = gaussianGroups.size();
-  // dL_dreflect_factor[0] = 0.123f;
-  // Group Gaussians by their Mean3D cell in a unit (1x1x1) world-space grid.
-  // Scratch buffer of size P; freed before returning.
-  // int *group_ids = nullptr;
-  // CHECK_CUDA(cudaMalloc(&group_ids, sizeof(int) * P), debug);
-  // {
-  //   const int threads = 256;
-  //   const int blocks = (P + threads - 1) / threads;
-  //   computeGridGroupIds<<<blocks, threads>>>(P, (const float3 *)means3D, group_ids);
-  //   CHECK_CUDA(, debug);
-  // }
-
   // Compute loss gradients w.r.t. 2D mean position, conic matrix,
   // opacity and RGB of Gaussians from per-pixel loss gradients.
   // If we were given precomputed colors and not SHs, use them.
@@ -457,6 +443,7 @@ void CudaRasterizer::Rasterizer::backward(
                  background,
                  geomState.means2D,
                  geomState.conic_opacity,
+                 gaussianNeighbors,
                  color_ptr,
                  geomState.depths,
                  imgState.accum_alpha,
@@ -481,6 +468,7 @@ void CudaRasterizer::Rasterizer::backward(
                                   shs,
                                   geomState.clamped,
                                   opacities,
+                                  gaussianNeighbors,
                                   (glm::vec3 *)scales,
                                   (glm::vec4 *)rotations,
                                   scale_modifier,

@@ -237,6 +237,7 @@ RasterizeGaussiansBackwardCUDA(
                                          colors.contiguous().data<float>(),
                                          opacities.contiguous().data<float>(),
                                          reflect_factors.contiguous().data<float>(),
+                                         devGroupPtrs,
                                          scales.data_ptr<float>(),
                                          scale_modifier,
                                          rotations.data_ptr<float>(),
