@@ -386,7 +386,7 @@ void CudaRasterizer::Rasterizer::backward(
     const float *colors_precomp,
     const float *opacities,
     const float *reflect_factors,
-    int ** gaussianNeighbors,
+    float *gaussianNeighbors,
     const float *scales,
     const float scale_modifier,
     const float *rotations,

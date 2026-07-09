@@ -26,6 +26,7 @@
 
 #include <thrust/device_vector.h>
 #include "gaussiansGrouper.h"
+#include "debugUtils/VectorCompare.h"
 #include <map>
 #include <tuple>
 #include <vector>
@@ -149,7 +150,7 @@ RasterizeGaussiansCUDA(
   return std::make_tuple(rendered, out_color, radii, geomBuffer, binningBuffer, imgBuffer, out_invdepth);
 }
 
-std::tuple<torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor,torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor>
+std::tuple<torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor>
 RasterizeGaussiansBackwardCUDA(
     const torch::Tensor &background,
     const torch::Tensor &means3D,
@@ -181,24 +182,28 @@ RasterizeGaussiansBackwardCUDA(
   const int H = dL_dout_color.size(1);
   const int W = dL_dout_color.size(2);
 
-  const std::map<std::tuple<int, int, int>, std::vector<int>> &gaussianGroups = GroupGaussians(means3D);
-  int noKeys = gaussianGroups.size();
+  const std::vector<float> &gaussianGroupsLoss = CalcPerGaussianNeighborsRefLoss(means3D, reflect_factors);
+  const std::vector<float> &gaussianGroupsLossCuda = CalcPerGaussianNeighborsRefLossCUDA(means3D, reflect_factors);
 
-  std::vector<int *> hostGroupPtrs;
-  hostGroupPtrs.reserve(noKeys);
-  for (const auto &kv : gaussianGroups)
+  ComparisonResult compRes = CompareVectors(gaussianGroupsLoss, gaussianGroupsLossCuda);
+  printf("cpu vs gpu result total difference: %f\n", compRes.totalDifference);
+  if(compRes.totalDifference > 1e-5)
   {
-    const std::vector<int> &indices = kv.second;
-    int *devPtr = nullptr;
-    size_t bytes = indices.size() * sizeof(int);
-    cudaMalloc(&devPtr, bytes);
-    cudaMemcpy(devPtr, indices.data(), bytes, cudaMemcpyHostToDevice);
-    hostGroupPtrs.push_back(devPtr);
+    for (const auto &[index, cpu_value, gpu_value] : compRes.differences)
+    {
+      std::cout << "Index: " << index << ", CPU Value: " << cpu_value << ", GPU Value: " << gpu_value << std::endl;
+    }
   }
 
-  int **devGroupPtrs = nullptr;
-  cudaMalloc(&devGroupPtrs, noKeys * sizeof(int *));
-  cudaMemcpy(devGroupPtrs, hostGroupPtrs.data(), noKeys * sizeof(int *), cudaMemcpyHostToDevice);
+  int noKeys = gaussianGroupsLoss.size();
+  thrust::device_vector<float> d_gaussianGroupsLoss(gaussianGroupsLoss.begin(), gaussianGroupsLoss.end());
+  std::cout << "first 3 group gf losses: " << gaussianGroupsLoss[0] << ", " << gaussianGroupsLoss[1] << ", " << gaussianGroupsLoss[2] << std::endl;
+
+  // int *devPtr = nullptr;
+  // size_t bytes = indices.size() * sizeof(int);
+  // cudaMalloc(&devPtr, bytes);
+  // cudaMemcpy(devPtr, indices.data(), bytes, cudaMemcpyHostToDevice);
+
   int M = 0;
   if (sh.size(0) != 0)
   {
@@ -237,7 +242,7 @@ RasterizeGaussiansBackwardCUDA(
                                          colors.contiguous().data<float>(),
                                          opacities.contiguous().data<float>(),
                                          reflect_factors.contiguous().data<float>(),
-                                         devGroupPtrs,
+                                         thrust::raw_pointer_cast(d_gaussianGroupsLoss.data()),
                                          scales.data_ptr<float>(),
                                          scale_modifier,
                                          rotations.data_ptr<float>(),
@@ -268,16 +273,16 @@ RasterizeGaussiansBackwardCUDA(
                                          debug);
   }
   float check = dL_dreflect_factor[0][0].item<float>();
-  std::cout<<"first item of d_drf value: "<<check<<std::endl;
+  std::cout << "first item of d_drf value: " << check << std::endl;
   // std::cout
 
-  for (int *devPtr : hostGroupPtrs)
-  {
-    cudaFree(devPtr);
-  }
-  cudaFree(devGroupPtrs);
+  // for (int *devPtr : hostGroupPtrs)
+  // {
+  //   cudaFree(devPtr);
+  // }
+  // cudaFree(devGroupPtrs);
 
-  return std::make_tuple(dL_dmeans2D, dL_dcolors, dL_dopacity, dL_dreflect_factor,dL_dmeans3D, dL_dcov3D, dL_dsh, dL_dscales, dL_drotations);
+  return std::make_tuple(dL_dmeans2D, dL_dcolors, dL_dopacity, dL_dreflect_factor, dL_dmeans3D, dL_dcov3D, dL_dsh, dL_dscales, dL_drotations);
 }
 
 torch::Tensor markVisible(

@@ -458,7 +458,7 @@ renderCUDA(
 	const float* __restrict__ bg_color,
 	const float2* __restrict__ points_xy_image,
 	const float4* __restrict__ conic_opacity,
-  int ** __restrict__ gaussianNeighbors,
+  float * __restrict__ gaussianNeighbors,
 	const float* __restrict__ colors,
 	const float* __restrict__ depths,
 	const float* __restrict__ final_Ts,
@@ -636,7 +636,7 @@ renderCUDA(
 
 			// Update gradients w.r.t. opacity of the Gaussian
 			atomicAdd(&(dL_dopacity[global_id]), G * dL_dalpha);
-      dL_dreflect_factor[global_id] = 0.123f;
+      dL_dreflect_factor[global_id] = gaussianNeighbors[global_id];
 			// atomicAdd(&(dL_dreflect_factor[global_id]), 0.123f);
 		}
 	}
@@ -649,7 +649,7 @@ void BACKWARD::preprocess(
 	const float* shs,
 	const bool* clamped,
 	const float* opacities,
-  int **gaussianNeighbors,
+  float *gaussianNeighbors,
 	const glm::vec3* scales,
 	const glm::vec4* rotations,
 	const float scale_modifier,
@@ -725,7 +725,7 @@ void BACKWARD::render(
 	const float* bg_color,
 	const float2* means2D,
 	const float4* conic_opacity,
-  int **gaussianNeighbors,
+  float *gaussianNeighbors,
 	const float* colors,
 	const float* depths,
 	const float* final_Ts,

@@ -27,7 +27,9 @@ setup(
             "cuda_rasterizer/backward.cu",
             "gaussiansGrouper.cu",
             "rasterize_points.cu",
-            "ext.cpp"],
+            "ext.cpp",
+            "debugUtils/VectorCompare.cu"
+            ],
             extra_compile_args={
                 "nvcc": [
                     "-I" + os.path.join(os.path.dirname(os.path.abspath(__file__)), "third_party/glm/"),

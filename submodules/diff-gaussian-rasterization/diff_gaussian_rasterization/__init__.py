@@ -145,7 +145,7 @@ class _RasterizeGaussians(torch.autograd.Function):
 
         # global logCount
         # if (logCount < 10 and logCount % 10 == 0):
-        #     print(grad_reflect_factors)
+        #     print("backward gradients: ",grad_reflect_factors[0], grad_reflect_factors[1], grad_reflect_factors[2])
 
         grads = (
             grad_means3D,
