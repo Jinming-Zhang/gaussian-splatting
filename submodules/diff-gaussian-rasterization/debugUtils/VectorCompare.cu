@@ -3,11 +3,14 @@
 #include <tuple>
 #include <algorithm>
 #include <cassert>
+
+#include <iostream>
 #include <cstdlib>
 #include <fstream>
 #include <string>
 
 const float tolerance = 1e-5f;
+const bool debug = false;
 ComparisonResult CompareVectors(const std::vector<float> &vec1, const std::vector<float> &vec2)
 {
   assert(vec1.size() == vec2.size() && "Vectors must be of the same size for comparison.");
@@ -24,6 +27,21 @@ ComparisonResult CompareVectors(const std::vector<float> &vec1, const std::vecto
     }
   }
 
+  ComparisonResult compRes = {totalDifference, differences};
+
+  if (!debug)
+  {
+    return compRes;
+  }
+
+  printf("cpu vs gpu result total difference: %f\n", compRes.totalDifference);
+  if (compRes.totalDifference > 1e-5)
+  {
+    for (const auto &[index, cpu_value, gpu_value] : compRes.differences)
+    {
+      std::cout << "Index: " << index << ", CPU Value: " << cpu_value << ", GPU Value: " << gpu_value << std::endl;
+    }
+  }
   const char *home = std::getenv("HOME");
   if (home != nullptr)
   {
@@ -44,5 +62,5 @@ ComparisonResult CompareVectors(const std::vector<float> &vec1, const std::vecto
     }
   }
 
-  return {totalDifference, differences};
+  return compRes;
 }

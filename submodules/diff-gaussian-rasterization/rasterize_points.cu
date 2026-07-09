@@ -104,7 +104,7 @@ RasterizeGaussiansCUDA(
 
   int rendered = 0;
 
-  std::cout << "r_f in value:" << reflect_factor[0].item<float>() << std::endl;
+  // std::cout << "r_f in value:" << reflect_factor[0].item<float>() << std::endl;
   if (P != 0)
   {
     int M = 0;
@@ -145,7 +145,7 @@ RasterizeGaussiansCUDA(
         render_mode);
   }
   // printf("Render mode %d\n", render_mode);
-  std::cout << "Min feature value: " << minFValTensor.item<float>() << ", Max feature value: " << maxFValTensor.item<float>() << std::endl;
+  // std::cout << "Min feature value: " << minFValTensor.item<float>() << ", Max feature value: " << maxFValTensor.item<float>() << std::endl;
   // std::cout << "number of gaussians:"<< P << std::endl;
   return std::make_tuple(rendered, out_color, radii, geomBuffer, binningBuffer, imgBuffer, out_invdepth);
 }
@@ -182,22 +182,14 @@ RasterizeGaussiansBackwardCUDA(
   const int H = dL_dout_color.size(1);
   const int W = dL_dout_color.size(2);
 
-  const std::vector<float> &gaussianGroupsLoss = CalcPerGaussianNeighborsRefLoss(means3D, reflect_factors);
+  // const std::vector<float> &gaussianGroupsLoss = CalcPerGaussianNeighborsRefLoss(means3D, reflect_factors);
   const std::vector<float> &gaussianGroupsLossCuda = CalcPerGaussianNeighborsRefLossCUDA(means3D, reflect_factors);
 
-  ComparisonResult compRes = CompareVectors(gaussianGroupsLoss, gaussianGroupsLossCuda);
-  printf("cpu vs gpu result total difference: %f\n", compRes.totalDifference);
-  if(compRes.totalDifference > 1e-5)
-  {
-    for (const auto &[index, cpu_value, gpu_value] : compRes.differences)
-    {
-      std::cout << "Index: " << index << ", CPU Value: " << cpu_value << ", GPU Value: " << gpu_value << std::endl;
-    }
-  }
+  // CompareVectors(gaussianGroupsLoss, gaussianGroupsLossCuda);
 
-  int noKeys = gaussianGroupsLoss.size();
-  thrust::device_vector<float> d_gaussianGroupsLoss(gaussianGroupsLoss.begin(), gaussianGroupsLoss.end());
-  std::cout << "first 3 group gf losses: " << gaussianGroupsLoss[0] << ", " << gaussianGroupsLoss[1] << ", " << gaussianGroupsLoss[2] << std::endl;
+  // int noKeys = gaussianGroupsLoss.size();
+  thrust::device_vector<float> d_gaussianGroupsLoss(gaussianGroupsLossCuda.begin(), gaussianGroupsLossCuda.end());
+  // std::cout << "first 3 group gf losses: " << gaussianGroupsLoss[0] << ", " << gaussianGroupsLoss[1] << ", " << gaussianGroupsLoss[2] << std::endl;
 
   // int *devPtr = nullptr;
   // size_t bytes = indices.size() * sizeof(int);
@@ -272,8 +264,8 @@ RasterizeGaussiansBackwardCUDA(
                                          antialiasing,
                                          debug);
   }
-  float check = dL_dreflect_factor[0][0].item<float>();
-  std::cout << "first item of d_drf value: " << check << std::endl;
+  // float check = dL_dreflect_factor[0][0].item<float>();
+  // std::cout << "first item of d_drf value: " << check << std::endl;
   // std::cout
 
   // for (int *devPtr : hostGroupPtrs)

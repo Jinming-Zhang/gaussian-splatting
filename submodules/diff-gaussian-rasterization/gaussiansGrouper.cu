@@ -165,8 +165,8 @@ std::vector<float> CalcPerGaussianNeighborsRefLossCUDA(const torch::Tensor &mean
   size_t elmtsSize = means3D.size(0);
   const std::unordered_map<std::tuple<int, int, int>, std::vector<size_t>, struct TupleHash> &group2GaussianIndices = GetGaussianGroups(means3D);
 
-  std::cout << "Finished grouping, number of groups: " << group2GaussianIndices.size() << std::endl;
-  std::cout << reflect_factors[0].item<float>() << ", " << reflect_factors[1].item<float>() << ", " << reflect_factors[2].item<float>() << std::endl;
+  // std::cout << "Finished grouping, number of groups: " << group2GaussianIndices.size() << std::endl;
+  // std::cout << reflect_factors[0].item<float>() << ", " << reflect_factors[1].item<float>() << ", " << reflect_factors[2].item<float>() << std::endl;
 
   thrust::device_vector<float> perGaussianRefLoss(elmtsSize, 0.0);
   for (const auto &kv : group2GaussianIndices)
@@ -186,7 +186,7 @@ std::vector<float> CalcPerGaussianNeighborsRefLossCUDA(const torch::Tensor &mean
   {
     std::cout << "CUDA error: " << cudaGetErrorString(res) << std::endl;
   }
-  std::cout << perGaussianRefLoss[0] << ", " << perGaussianRefLoss[1] << ", " << perGaussianRefLoss[2] << std::endl;
+  // std::cout << perGaussianRefLoss[0] << ", " << perGaussianRefLoss[1] << ", " << perGaussianRefLoss[2] << std::endl;
   return std::vector<float>(perGaussianRefLoss.begin(), perGaussianRefLoss.end());
 }
 
@@ -197,7 +197,7 @@ std::unordered_map<std::tuple<int, int, int>, std::vector<size_t>, struct TupleH
   size_t elmtsSize = means3D.size(0);
   for (size_t i = 0; i < elmtsSize; ++i)
   {
-    printf("Processing gaussian %d/%d\r", static_cast<int>(i) + 1, static_cast<int>(elmtsSize));
+    // printf("Processing gaussian %d/%d\r", static_cast<int>(i) + 1, static_cast<int>(elmtsSize));
     int x = static_cast<int>(std::floor(means3D[i][0].item<float>()));
     int y = static_cast<int>(std::floor(means3D[i][1].item<float>()));
     int z = static_cast<int>(std::floor(means3D[i][2].item<float>()));
