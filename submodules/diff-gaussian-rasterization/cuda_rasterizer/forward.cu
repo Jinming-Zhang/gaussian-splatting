@@ -300,15 +300,16 @@ __global__ void preprocessCUDA(int P, int D, int M,
   if (det == 0.0f)
     return;
   float det_inv = 1.f / det;
-  float3 conic = {cov.z * det_inv, -cov.y * det_inv, cov.x * det_inv};
+  // conic is the inverse of the 2d covariance matrix, 3 values because it's symmetric
+  float3 conic = {cov.z * det_inv, -cov.y * det_inv, cov.x * det_inv}; 
 
   // Compute extent in screen space (by finding eigenvalues of
   // 2D covariance matrix). Use extent to compute a bounding rectangle
   // of screen-space tiles that this Gaussian overlaps with. Quit if
   // rectangle covers 0 tiles.
   float mid = 0.5f * (cov.x + cov.z);
-  float lambda1 = mid + sqrt(max(0.1f, mid * mid - det));
-  float lambda2 = mid - sqrt(max(0.1f, mid * mid - det));
+  float lambda1 = mid + sqrt(max(0.1f, mid * mid - det)); // eigen value 1
+  float lambda2 = mid - sqrt(max(0.1f, mid * mid - det)); // eigen value 2
   float my_radius = ceil(3.f * sqrt(max(lambda1, lambda2)));
   float2 point_image = {ndc2Pix(p_proj.x, W), ndc2Pix(p_proj.y, H)};
   uint2 rect_min, rect_max;

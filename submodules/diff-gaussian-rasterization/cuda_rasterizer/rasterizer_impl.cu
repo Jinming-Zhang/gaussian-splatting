@@ -100,8 +100,10 @@ __global__ void duplicateWithKeys(
     {
       for (int x = rect_min.x; x < rect_max.x; x++)
       {
+        // tile id index
         uint64_t key = y * grid.x + x;
         key <<= 32;
+        // tile id index combined with depth into same variable
         key |= *((uint32_t *)&depths[idx]);
         gaussian_keys_unsorted[off] = key;
         gaussian_values_unsorted[off] = idx;
@@ -114,6 +116,10 @@ __global__ void duplicateWithKeys(
 // Check keys to see if it is at the start/end of one tile's range in
 // the full sorted list. If yes, write start/end of this tile.
 // Run once per instanced (duplicated) Gaussian ID.
+
+// L: number of Gaussians rendered
+// point_list_keys is the (tileId,depth) key
+// ranges: output
 __global__ void identifyTileRanges(int L, uint64_t *point_list_keys, uint2 *ranges)
 {
   auto idx = cg::this_grid().thread_rank();
@@ -260,6 +266,7 @@ int CudaRasterizer::Rasterizer::forward(
     radii = geomState.internal_radii;
   }
 
+  // number of 16x16 tiles in the image
   dim3 tile_grid((width + BLOCK_X - 1) / BLOCK_X, (height + BLOCK_Y - 1) / BLOCK_Y, 1);
   dim3 block(BLOCK_X, BLOCK_Y, 1);
 
