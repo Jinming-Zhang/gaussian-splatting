@@ -378,11 +378,12 @@ __global__ void __launch_bounds__(BLOCK_X *BLOCK_Y)
   bool done = !inside;
 
   // Load start/end range of IDs to process in bit sorted list.
+  // accessing the tile's index in ranges
   uint2 range = ranges[block.group_index().y * horizontal_blocks + block.group_index().x];
   const int rounds = ((range.y - range.x + BLOCK_SIZE - 1) / BLOCK_SIZE);
-  int toDo = range.y - range.x;
+  int toDo = range.y - range.x; // number of gaussians in this tile?
 
-  // Allocate storage for batches of collectively fetched data.
+  // Allocate storage for batches of collectively fetched data. (for this 16x16 tile/block)
   __shared__ int collected_id[BLOCK_SIZE];
   __shared__ float2 collected_xy[BLOCK_SIZE];
   __shared__ float4 collected_conic_opacity[BLOCK_SIZE];
@@ -488,7 +489,7 @@ __global__ void __launch_bounds__(BLOCK_X *BLOCK_Y)
   // rendering data to the frame and auxiliary buffers.
   if (inside)
   {
-    final_T[pix_id] = T;
+    final_T[pix_id] = T; // T is (1-alpha)^n, n is the number of contributors to this pixel
     n_contrib[pix_id] = last_contributor;
     for (int ch = 0; ch < CHANNELS; ch++)
       out_color[ch * H * W + pix_id] = C[ch] + T * bg_color[ch];

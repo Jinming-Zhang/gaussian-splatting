@@ -72,7 +72,7 @@ __global__ void duplicateWithKeys(
     int P,
     const float2 *points_xy,
     const float *depths,
-    const uint32_t *offsets,
+    const uint32_t *offsets, // size == # of gaussians, value is sum of number of touched tiles of previous gaussians
     uint64_t *gaussian_keys_unsorted,
     uint32_t *gaussian_values_unsorted,
     int *radii,
@@ -133,11 +133,14 @@ __global__ void identifyTileRanges(int L, uint64_t *point_list_keys, uint2 *rang
     ranges[currtile].x = 0;
   else
   {
+    // key is (tileid|depth of the gaussian), value is the gaussian id
+    // note they key can be different but still representing same tile, just the depth is different
+    // if tile id is different
     uint32_t prevtile = point_list_keys[idx - 1] >> 32;
     if (currtile != prevtile)
     {
-      ranges[prevtile].y = idx;
-      ranges[currtile].x = idx;
+      ranges[prevtile].y = idx; // the end gaussian of previous tile is this
+      ranges[currtile].x = idx; // the start gaussian of current tile is also this, since we at boundary
     }
   }
   if (idx == L - 1)
@@ -360,7 +363,7 @@ int CudaRasterizer::Rasterizer::forward(
   // Let each tile blend its range of Gaussians independently in parallel
   const float *feature_ptr = colors_precomp != nullptr ? colors_precomp : geomState.rgb;
   CHECK_CUDA(FORWARD::render(
-                 tile_grid, block,
+                 tile_grid, block,// number of 16x16 tiles horizontally and vertically, size of block (16x16)
                  imgState.ranges,
                  binningState.point_list,
                  width, height,
