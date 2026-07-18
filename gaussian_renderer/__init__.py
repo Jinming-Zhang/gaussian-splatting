@@ -55,7 +55,7 @@ def render(viewpoint_camera, pc: GaussianModel, pipe, bg_color: torch.Tensor, sc
         prefiltered=False,
         debug=pipe.debug,
         antialiasing=pipe.antialiasing,
-        render_mode=render_mode_int
+        configFlags=render_mode_int
     )
 
     rasterizer = GaussianRasterizer(raster_settings=raster_settings)
@@ -64,6 +64,7 @@ def render(viewpoint_camera, pc: GaussianModel, pipe, bg_color: torch.Tensor, sc
     means2D = screenspace_points
     opacity = pc.get_opacity
     reflect_factor = pc.get_reflect_factor
+    illumination = pc.get_illumination
 
     # If precomputed 3d covariance is provided, use it. If not, then it will be computed from
     # scaling / rotation by the rasterizer.
@@ -108,6 +109,7 @@ def render(viewpoint_camera, pc: GaussianModel, pipe, bg_color: torch.Tensor, sc
             colors_precomp=colors_precomp,
             opacities=opacity,
             reflect_factor=reflect_factor,
+            illumination=illumination,
             scales=scales,
             rotations=rotations,
             cov3D_precomp=cov3D_precomp)
@@ -119,6 +121,7 @@ def render(viewpoint_camera, pc: GaussianModel, pipe, bg_color: torch.Tensor, sc
             colors_precomp=colors_precomp,
             opacities=opacity,
             reflect_factor=reflect_factor,
+            illumination=illumination,
             scales=scales,
             rotations=rotations,
             cov3D_precomp=cov3D_precomp)

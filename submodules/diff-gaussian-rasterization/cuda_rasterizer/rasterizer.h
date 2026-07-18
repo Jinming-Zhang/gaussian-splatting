@@ -40,6 +40,7 @@ namespace CudaRasterizer
 			const float* colors_precomp,
 			const float* opacities,
 			const float* reflect_factors,
+			const float* illumination,
 			const float* scales,
 			const float scale_modifier,
 			const float* rotations,
@@ -56,7 +57,7 @@ namespace CudaRasterizer
 			bool debug = false,
       float* minFeatureVal = nullptr,
       float* maxFeatureVal = nullptr,
-      const int render_mode = 0);
+      const int configFlags = 0);
 
 		static void backward(
 			const int P, int D, int M, int R,
@@ -67,6 +68,7 @@ namespace CudaRasterizer
 			const float* colors_precomp,
 			const float* opacities,
 			const float* reflect_factors,
+			const float* illumination,
       float * gaussianNeighbors,
 			const float* scales,
 			const float scale_modifier,
@@ -86,6 +88,7 @@ namespace CudaRasterizer
 			float* dL_dconic,
 			float* dL_dopacity,
 			float* dL_dreflect_factor,
+			float* dL_dillumination,
 			float* dL_dcolor,
 			float* dL_dinvdepth,
 			float* dL_dmean3D,
@@ -94,7 +97,8 @@ namespace CudaRasterizer
 			float* dL_dscale,
 			float* dL_drot,
 			bool antialiasing,
-			bool debug);
+			bool debug,
+      const int configFlags = 0);
 	};
 };
 

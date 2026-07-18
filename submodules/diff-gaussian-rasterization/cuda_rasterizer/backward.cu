@@ -152,8 +152,12 @@ __global__ void computeCov2DCUDA(int P,
 	const float tan_fovx, float tan_fovy,
 	const float* view_matrix,
 	const float* opacities,
+	const float* reflect_factors,
+	const float* illumination,
 	const float* dL_dconics,
 	float* dL_dopacity,
+	float* dL_dreflect_factor,
+	float* dL_dillumination,
 	const float* dL_dinvdepth,
 	float3* dL_dmeans,
 	float* dL_dcov,
@@ -414,7 +418,10 @@ __global__ void preprocessCUDA(
 	float* dL_dsh,
 	glm::vec3* dL_dscale,
 	glm::vec4* dL_drot,
-	float* dL_dopacity)
+	float* dL_dopacity,
+	float* dL_dreflect_factor,
+	float* dL_dillumination
+)
 {
 	auto idx = cg::this_grid().thread_rank();
 	if (idx >= P || !(radii[idx] > 0))
@@ -458,6 +465,8 @@ renderCUDA(
 	const float* __restrict__ bg_color,
 	const float2* __restrict__ points_xy_image,
 	const float4* __restrict__ conic_opacity,
+	const float* __restrict__ reflect_factor,
+	const float* __restrict__ illumination,
   float * __restrict__ gaussianNeighbors,
 	const float* __restrict__ colors,
 	const float* __restrict__ depths,
@@ -469,6 +478,7 @@ renderCUDA(
 	float4* __restrict__ dL_dconic2D,
 	float* __restrict__ dL_dopacity,
 	float* __restrict__ dL_dreflect_factor,
+	float* __restrict__ dL_dillumination,
 	float* __restrict__ dL_dcolors,
 	float* __restrict__ dL_dinvdepths
 )
@@ -496,6 +506,8 @@ renderCUDA(
 	__shared__ int collected_id[BLOCK_SIZE];
 	__shared__ float2 collected_xy[BLOCK_SIZE];
 	__shared__ float4 collected_conic_opacity[BLOCK_SIZE];
+	__shared__ float collected_reflect_factor[BLOCK_SIZE];
+	__shared__ float collected_illumination[BLOCK_SIZE];
 	__shared__ float collected_colors[C * BLOCK_SIZE];
 	__shared__ float collected_depths[BLOCK_SIZE];
 
@@ -545,6 +557,9 @@ renderCUDA(
 			collected_id[block.thread_rank()] = coll_id;
 			collected_xy[block.thread_rank()] = points_xy_image[coll_id];
 			collected_conic_opacity[block.thread_rank()] = conic_opacity[coll_id];
+
+			collected_reflect_factor[block.thread_rank()] = reflect_factor[coll_id];
+			collected_illumination[block.thread_rank()] = illumination[coll_id];
 			for (int i = 0; i < C; i++)
 				collected_colors[i * BLOCK_SIZE + block.thread_rank()] = colors[coll_id * C + i];
 
@@ -651,6 +666,8 @@ void BACKWARD::preprocess(
 	const float* shs,
 	const bool* clamped,
 	const float* opacities,
+  const float* reflect_factors,
+  const float* illumination,
   float *gaussianNeighbors,
 	const glm::vec3* scales,
 	const glm::vec4* rotations,
@@ -665,6 +682,8 @@ void BACKWARD::preprocess(
 	const float* dL_dconic,
 	const float* dL_dinvdepth,
 	float* dL_dopacity,
+  float * dL_dreflect_factor,
+  float *dL_dillumination,
 	glm::vec3* dL_dmean3D,
 	float* dL_dcolor,
 	float* dL_dcov3D,
@@ -688,8 +707,12 @@ void BACKWARD::preprocess(
 		tan_fovy,
 		viewmatrix,
 		opacities,
+    reflect_factors,
+    illumination,
 		dL_dconic,
 		dL_dopacity,
+    dL_dreflect_factor,
+    dL_dillumination,
 		dL_dinvdepth,
 		(float3*)dL_dmean3D,
 		dL_dcov3D,
@@ -716,7 +739,10 @@ void BACKWARD::preprocess(
 		dL_dsh,
 		dL_dscale,
 		dL_drot,
-		dL_dopacity);
+		dL_dopacity,
+    dL_dreflect_factor,
+    dL_dillumination
+  );
 }
 
 void BACKWARD::render(
@@ -727,6 +753,8 @@ void BACKWARD::render(
 	const float* bg_color,
 	const float2* means2D,
 	const float4* conic_opacity,
+  const float* reflect_factor,
+  const float* illumination,
   float *gaussianNeighbors,
 	const float* colors,
 	const float* depths,
@@ -738,8 +766,11 @@ void BACKWARD::render(
 	float4* dL_dconic2D,
 	float* dL_dopacity,
   float* dL_dreflect_factor,
+  float* dL_dillumination,
 	float* dL_dcolors,
-	float* dL_dinvdepths)
+	float* dL_dinvdepths,
+  const int configFlags
+)
 {
 	renderCUDA<NUM_CHANNELS> << <grid, block >> >(
 		ranges,
@@ -748,6 +779,8 @@ void BACKWARD::render(
 		bg_color,
 		means2D,
 		conic_opacity,
+		reflect_factor,
+		illumination,
     gaussianNeighbors,
 		colors,
 		depths,
@@ -759,6 +792,7 @@ void BACKWARD::render(
 		dL_dconic2D,
 		dL_dopacity,
     dL_dreflect_factor,
+		dL_dillumination,
 		dL_dcolors,
 		dL_dinvdepths
 		);

@@ -28,6 +28,7 @@ namespace FORWARD
                   const glm::vec4 *rotations,
                   const float *opacities,
                   const float *reflect_factors,
+                  const float *illumination,
                   const float *shs,
                   bool *clamped,
                   const float *cov3D_precomp,
@@ -45,6 +46,7 @@ namespace FORWARD
                   float *colors,
                   float4 *conic_opacity,
                   float *out_reflect_factor,
+                  float *out_illumination,
                   const dim3 grid,
                   uint32_t *tiles_touched,
                   bool prefiltered,
@@ -60,6 +62,7 @@ namespace FORWARD
       const float *features,
       const float4 *conic_opacity,
       const float *reflect_factor,
+      const float *illumination,
       float *final_T,
       uint32_t *n_contrib,
       const float *bg_color,
@@ -68,7 +71,7 @@ namespace FORWARD
       float *depth,
       float *minFeatureVal,
       float *maxFeatureVal,
-      const int render_mode);
+      const int configFlags);
 }
 
 #endif

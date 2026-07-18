@@ -226,6 +226,7 @@ __global__ void preprocessCUDA(int P, int D, int M,
                                const glm::vec4 *rotations,
                                const float *opacities,
                                const float *reflect_factors,
+                               const float *illumination,
                                const float *shs,
                                bool *clamped,
                                const float *cov3D_precomp,
@@ -243,6 +244,7 @@ __global__ void preprocessCUDA(int P, int D, int M,
                                float *rgb,
                                float4 *conic_opacity,
                                float *out_reflect_factor,
+                               float *out_illumination,
                                const dim3 grid,
                                uint32_t *tiles_touched,
                                bool prefiltered,
@@ -334,9 +336,11 @@ __global__ void preprocessCUDA(int P, int D, int M,
   // Inverse 2D covariance and opacity neatly pack into one float4
   float opacity = opacities[idx];
   float r_f = reflect_factors[idx];
+  float I = illumination[idx];
 
   conic_opacity[idx] = {conic.x, conic.y, conic.z, opacity * h_convolution_scaling};
   out_reflect_factor[idx] = r_f;
+  out_illumination[idx] = I;
   tiles_touched[idx] = (rect_max.y - rect_min.y) * (rect_max.x - rect_min.x);
 }
 
@@ -353,6 +357,7 @@ __global__ void __launch_bounds__(BLOCK_X *BLOCK_Y)
         const float *__restrict__ features,
         const float4 *__restrict__ conic_opacity,
         const float *__restrict__ reflect_factor,
+        const float *__restrict__ illumination,
         float *__restrict__ final_T,
         uint32_t *__restrict__ n_contrib,
         const float *__restrict__ bg_color,
@@ -361,7 +366,7 @@ __global__ void __launch_bounds__(BLOCK_X *BLOCK_Y)
         float *__restrict__ invdepth,
         float *__restrict__ minFeatureVal,
         float *__restrict__ maxFeatureVal,
-        const int render_mode)
+        const int configFlags)
 {
   // Identify current tile and associated min/max pixel range.
   auto block = cg::this_thread_block();
@@ -388,6 +393,7 @@ __global__ void __launch_bounds__(BLOCK_X *BLOCK_Y)
   __shared__ float2 collected_xy[BLOCK_SIZE];
   __shared__ float4 collected_conic_opacity[BLOCK_SIZE];
   __shared__ float collected_reflect_factor[BLOCK_SIZE];
+  __shared__ float collected_illumination[BLOCK_SIZE];
 
   // Initialize helper variables
   float T = 1.0f;
@@ -414,6 +420,7 @@ __global__ void __launch_bounds__(BLOCK_X *BLOCK_Y)
       collected_xy[block.thread_rank()] = points_xy_image[coll_id];
       collected_conic_opacity[block.thread_rank()] = conic_opacity[coll_id];
       collected_reflect_factor[block.thread_rank()] = reflect_factor[coll_id];
+      collected_illumination[block.thread_rank()] = illumination[coll_id];
     }
     block.sync();
 
@@ -429,6 +436,7 @@ __global__ void __launch_bounds__(BLOCK_X *BLOCK_Y)
       float2 d = {xy.x - pixf.x, xy.y - pixf.y};
       float4 con_o = collected_conic_opacity[j];
       float r_f = collected_reflect_factor[j];
+      float I = collected_illumination[j];
       float power = -0.5f * (con_o.x * d.x * d.x + con_o.z * d.y * d.y) - con_o.y * d.x * d.y;
       if (power > 0.0f)
         continue;
@@ -471,7 +479,7 @@ __global__ void __launch_bounds__(BLOCK_X *BLOCK_Y)
         // float linearVal = (expf(tmp) - 1) / (2.71828f - 1);
 
         // C[ch] += linearVal * alpha * T;
-        C[ch] += r_f * featureVal * alpha * T;
+        C[ch] += (I * r_f * featureVal * alpha * T);
       }
 
       if (invdepth)
@@ -492,7 +500,7 @@ __global__ void __launch_bounds__(BLOCK_X *BLOCK_Y)
     final_T[pix_id] = T; // T is (1-alpha)^n, n is the number of contributors to this pixel
     n_contrib[pix_id] = last_contributor;
     for (int ch = 0; ch < CHANNELS; ch++)
-      out_color[ch * H * W + pix_id] = C[ch] + T * bg_color[ch];
+      out_color[ch * H * W + pix_id] = C[ch] + T * bg_color[ch]; // final color is the accumulated color and the background color
 
     if (invdepth)
       invdepth[pix_id] = expected_invdepth; // 1. / (expected_depth + T * 1e3);
@@ -508,6 +516,7 @@ void FORWARD::render(
     const float *colors,
     const float4 *conic_opacity,
     const float *reflect_factor,
+    const float *illumination,
     float *final_T,
     uint32_t *n_contrib,
     const float *bg_color,
@@ -516,9 +525,9 @@ void FORWARD::render(
     float *depth,
     float *minFeatureVal,
     float *maxFeatureVal,
-    const int render_mode)
+    const int configFlags)
 {
-  cudaMemcpyToSymbol(RENDER_MODE, &render_mode, sizeof(int));
+  cudaMemcpyToSymbol(RENDER_MODE, &configFlags, sizeof(int));
   renderCUDA<NUM_CHANNELS><<<grid, block>>>(
       ranges,
       point_list,
@@ -527,6 +536,7 @@ void FORWARD::render(
       colors,
       conic_opacity,
       reflect_factor,
+      illumination,
       final_T,
       n_contrib,
       bg_color,
@@ -535,7 +545,7 @@ void FORWARD::render(
       depth,
       minFeatureVal,
       maxFeatureVal,
-      render_mode);
+      configFlags);
 }
 
 void FORWARD::preprocess(int P, int D, int M,
@@ -545,6 +555,7 @@ void FORWARD::preprocess(int P, int D, int M,
                          const glm::vec4 *rotations,
                          const float *opacities,
                          const float *reflect_factors,
+                         const float *illumination,
                          const float *shs,
                          bool *clamped,
                          const float *cov3D_precomp,
@@ -562,6 +573,7 @@ void FORWARD::preprocess(int P, int D, int M,
                          float *rgb,
                          float4 *conic_opacity,
                          float *out_reflect_factor,
+                         float *out_illumination,
                          const dim3 grid,
                          uint32_t *tiles_touched,
                          bool prefiltered,
@@ -575,6 +587,7 @@ void FORWARD::preprocess(int P, int D, int M,
       rotations,
       opacities,
       reflect_factors,
+      illumination,
       shs,
       clamped,
       cov3D_precomp,
@@ -592,6 +605,7 @@ void FORWARD::preprocess(int P, int D, int M,
       rgb,
       conic_opacity,
       out_reflect_factor,
+      out_illumination,
       grid,
       tiles_touched,
       prefiltered,
