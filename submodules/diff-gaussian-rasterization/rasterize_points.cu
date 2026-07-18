@@ -187,12 +187,13 @@ RasterizeGaussiansBackwardCUDA(
   const int W = dL_dout_color.size(2);
 
   // const std::vector<float> &gaussianGroupsLoss = CalcPerGaussianNeighborsRefLoss(means3D, reflect_factors);
-  const std::vector<float> &gaussianGroupsLossCuda = CalcPerGaussianNeighborsRefLossCUDA(means3D, reflect_factors);
+  // const std::vector<float> &gaussianGroupsLossCuda = CalcPerGaussianNeighborsRefLossCUDA(means3D, reflect_factors);
 
   // CompareVectors(gaussianGroupsLoss, gaussianGroupsLossCuda);
 
   // int noKeys = gaussianGroupsLoss.size();
-  thrust::device_vector<float> d_gaussianGroupsLoss(gaussianGroupsLossCuda.begin(), gaussianGroupsLossCuda.end());
+  // thrust::device_vector<float> d_gaussianGroupsLoss(gaussianGroupsLossCuda.begin(), gaussianGroupsLossCuda.end());
+  thrust::device_vector<float> d_gaussianGroupsLoss(P, 0.0f);
   // std::cout << "first 3 group gf losses: " << gaussianGroupsLoss[0] << ", " << gaussianGroupsLoss[1] << ", " << gaussianGroupsLoss[2] << std::endl;
 
   // int *devPtr = nullptr;
