@@ -11,10 +11,18 @@
 
 import torch
 import math
-from diff_gaussian_rasterization import GaussianRasterizationSettings, GaussianRasterizer
+from diff_gaussian_rasterization import GaussianRasterizationSettings, GaussianRasterizer, get_reflect_consistent_term
 from scene.gaussian_model import GaussianModel
 from utils.sh_utils import eval_sh
 
+def get_per_gaussian_reflect_consistency_loss(pc:GaussianModel):
+    """
+    Computes the per-Gaussian reflect consistency loss for a given GaussianModel.
+    This function is useful for evaluating the consistency of reflectance factors across neighboring Gaussians.
+    """
+    means3D = pc.get_xyz
+    reflect_factors = pc.get_reflect_factor
+    return get_reflect_consistent_term(means3D, reflect_factors)
 
 def render(viewpoint_camera, pc: GaussianModel, pipe, bg_color: torch.Tensor, scaling_modifier=1.0, separate_sh=False, override_color=None, use_trained_exp=False, render_mode="all"):
     """

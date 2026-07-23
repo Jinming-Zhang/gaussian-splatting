@@ -52,6 +52,8 @@ def rasterize_gaussians(
         raster_settings,
     )
 
+def get_reflect_consistent_term(means3D, reflect_factors):
+    return _C.get_reflect_consistent_term(means3D, reflect_factors)
 
 class _RasterizeGaussians(torch.autograd.Function):
     @staticmethod

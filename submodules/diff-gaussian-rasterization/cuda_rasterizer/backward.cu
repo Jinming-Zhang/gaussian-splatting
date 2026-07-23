@@ -535,6 +535,8 @@ renderCUDA(
 	}
 
 	float last_alpha = 0;
+  float last_R = 0;
+  float last_I = 0;
 	float last_color[C] = { 0 };
 	float last_invdepth = 0;
 
@@ -581,6 +583,9 @@ renderCUDA(
 			const float2 xy = collected_xy[j];
 			const float2 d = { xy.x - pixf.x, xy.y - pixf.y };
 			const float4 con_o = collected_conic_opacity[j];
+      const float r_i = collected_reflect_factor[j];
+      const float I_i = collected_illumination[j];
+
 			const float power = -0.5f * (con_o.x * d.x * d.x + con_o.z * d.y * d.y) - con_o.y * d.x * d.y;
 			if (power > 0.0f)
 				continue;
@@ -591,22 +596,27 @@ renderCUDA(
 				continue;
 
 			T = T / (1.f - alpha);
-			const float dchannel_dcolor = alpha * T;
+			const float dchannel_dcolor = alpha * T * r_i * I_i;
 
 			// Propagate gradients to per-Gaussian colors and keep
 			// gradients w.r.t. alpha (blending factor for a Gaussian/pixel
 			// pair).
 			float dL_dalpha = 0.0f;
+			float dL_dR = 0.0f;
+			float dL_dI = 0.0f;
+
 			const int global_id = collected_id[j];
 			for (int ch = 0; ch < C; ch++)
 			{
 				const float c = collected_colors[ch * BLOCK_SIZE + j];
 				// Update last color (to be used in the next iteration)
-				accum_rec[ch] = last_alpha * last_color[ch] + (1.f - last_alpha) * accum_rec[ch];
+				accum_rec[ch] = last_alpha * last_color[ch] * last_R * last_I + (1.f - last_alpha) * accum_rec[ch] * last_R * last_I;
 				last_color[ch] = c;
 
 				const float dL_dchannel = dL_dpixel[ch];
 				dL_dalpha += (c - accum_rec[ch]) * dL_dchannel;
+				dL_dR += ((c - accum_rec[ch]) * dL_dchannel);
+				dL_dI += ((c - accum_rec[ch]) * dL_dchannel);
 				// Update the gradients w.r.t. color of the Gaussian. 
 				// Atomic, since this pixel is just one of potentially
 				// many that were affected by this Gaussian.
@@ -623,9 +633,13 @@ renderCUDA(
 			atomicAdd(&(dL_dinvdepths[global_id]), dchannel_dcolor * dL_invdepth);
 			}
 
-			dL_dalpha *= T;
+			dL_dalpha *= (T*r_i*I_i);
+      dL_dR *= (T*alpha*I_i);
+      dL_dI *= (T*alpha*r_i);
 			// Update last alpha (to be used in the next iteration)
 			last_alpha = alpha;
+      last_R = r_i;
+      last_I = I_i;
 
 			// Account for fact that alpha also influences how much of
 			// the background color is added if nothing left to blend
@@ -636,7 +650,7 @@ renderCUDA(
 
 
 			// Helpful reusable temporary variables
-			const float dL_dG = con_o.w * dL_dalpha;
+			const float dL_dG = con_o.w * dL_dalpha * dL_dR * dL_dI;
 			const float gdx = G * d.x;
 			const float gdy = G * d.y;
 			const float dG_ddelx = -gdx * con_o.x - gdy * con_o.y;
@@ -653,8 +667,8 @@ renderCUDA(
 
 			// Update gradients w.r.t. opacity of the Gaussian
 			atomicAdd(&(dL_dopacity[global_id]), G * dL_dalpha);
-      dL_dreflect_factor[global_id] = gaussianNeighbors[global_id];
-			// atomicAdd(&(dL_dreflect_factor[global_id]), 0.123f);
+			atomicAdd(&(dL_dreflect_factor[global_id]), G * dL_dR);
+			atomicAdd(&(dL_dillumination[global_id]), G * dL_dI);
 		}
 	}
 }

@@ -48,7 +48,7 @@ RasterizeGaussiansCUDA(
     const torch::Tensor &colors,
     const torch::Tensor &opacity,
     const torch::Tensor &reflect_factor,
-    const torch::Tensor& illumination,
+    const torch::Tensor &illumination,
     const torch::Tensor &scales,
     const torch::Tensor &rotations,
     const float scale_modifier,
@@ -194,6 +194,11 @@ RasterizeGaussiansBackwardCUDA(
   // int noKeys = gaussianGroupsLoss.size();
   // thrust::device_vector<float> d_gaussianGroupsLoss(gaussianGroupsLossCuda.begin(), gaussianGroupsLossCuda.end());
   thrust::device_vector<float> d_gaussianGroupsLoss(P, 0.0f);
+  torch::Tensor gaussianGroupsLossTensor = torch::from_blob(
+                                               thrust::raw_pointer_cast(d_gaussianGroupsLoss.data()),
+                                               {P},
+                                               means3D.options())
+                                               .clone();
   // std::cout << "first 3 group gf losses: " << gaussianGroupsLoss[0] << ", " << gaussianGroupsLoss[1] << ", " << gaussianGroupsLoss[2] << std::endl;
 
   // int *devPtr = nullptr;
@@ -305,4 +310,22 @@ torch::Tensor markVisible(
   }
 
   return present;
+}
+
+torch::Tensor GetReflectConsistentTerm(
+    const torch::Tensor &means3D,
+    const torch::Tensor &reflect_factors)
+{
+  // const std::vector<float> &gaussianGroupsLoss = CalcPerGaussianNeighborsRefLoss(means3D, reflect_factors);
+  const std::vector<float> &gaussianGroupsLossCuda = CalcPerGaussianNeighborsRefLossCUDA(means3D, reflect_factors);
+  // CompareVectors(gaussianGroupsLoss, gaussianGroupsLossCuda);
+
+  const int64_t P = static_cast<int64_t>(gaussianGroupsLossCuda.size());
+  torch::Tensor gaussianGroupsLossTensor = torch::from_blob(
+                                               const_cast<float *>(gaussianGroupsLossCuda.data()),
+                                               {P},
+                                               torch::TensorOptions().dtype(torch::kFloat32))
+                                               .clone()
+                                               .to(means3D.options());
+  return gaussianGroupsLossTensor;
 }
