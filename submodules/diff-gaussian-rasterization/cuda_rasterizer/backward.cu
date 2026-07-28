@@ -638,7 +638,7 @@ __global__ void __launch_bounds__(BLOCK_X *BLOCK_Y)
       dL_dalpha += (-T_final / (1.f - alpha)) * bg_dot_dpixel;
 
       // Helpful reusable temporary variables
-      const float dL_dG = con_o.w * dL_dalpha * dL_dR * dL_dI;
+      const float dL_dG = con_o.w * dL_dalpha;
       const float gdx = G * d.x;
       const float gdy = G * d.y;
       const float dG_ddelx = -gdx * con_o.x - gdy * con_o.y;
