@@ -599,13 +599,13 @@ __global__ void __launch_bounds__(BLOCK_X *BLOCK_Y)
       {
         const float c = collected_colors[ch * BLOCK_SIZE + j];
         // Update last color (to be used in the next iteration)
-        accum_rec[ch] = last_alpha * last_color[ch] * last_R * last_I + (1.f - last_alpha) * accum_rec[ch] * last_R * last_I;
+        accum_rec[ch] = last_alpha * last_color[ch] * last_R * last_I + (1.f - last_alpha) * accum_rec[ch];
         last_color[ch] = c;
 
         const float dL_dchannel = dL_dpixel[ch];
-        dL_dalpha += (c - accum_rec[ch]) * dL_dchannel;
-        dL_dR += ((c - accum_rec[ch]) * dL_dchannel);
-        dL_dI += ((c - accum_rec[ch]) * dL_dchannel);
+        dL_dalpha += (r_i * I_i * c - accum_rec[ch]) * dL_dchannel;
+        dL_dR += c * dL_dchannel;
+        dL_dI += c * dL_dchannel;
         // Update the gradients w.r.t. color of the Gaussian.
         // Atomic, since this pixel is just one of potentially
         // many that were affected by this Gaussian.
@@ -622,7 +622,7 @@ __global__ void __launch_bounds__(BLOCK_X *BLOCK_Y)
         atomicAdd(&(dL_dinvdepths[global_id]), dchannel_dcolor * dL_invdepth);
       }
 
-      dL_dalpha *= (T * r_i * I_i);
+      dL_dalpha *= T;
       dL_dR *= (T * alpha * I_i);
       dL_dI *= (T * alpha * r_i);
       // Update last alpha (to be used in the next iteration)
@@ -655,8 +655,8 @@ __global__ void __launch_bounds__(BLOCK_X *BLOCK_Y)
 
       // Update gradients w.r.t. opacity of the Gaussian
       atomicAdd(&(dL_dopacity[global_id]), G * dL_dalpha);
-      atomicAdd(&(dL_dreflect_factor[global_id]), G * dL_dR);
-      atomicAdd(&(dL_dillumination[global_id]), G * dL_dI);
+      atomicAdd(&(dL_dreflect_factor[global_id]), dL_dR);
+      atomicAdd(&(dL_dillumination[global_id]), dL_dI);
       dL_dreflect_factor[global_id] = 0;
       dL_dillumination[global_id] = 0;
     }
