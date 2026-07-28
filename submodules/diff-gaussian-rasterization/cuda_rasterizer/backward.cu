@@ -585,7 +585,7 @@ __global__ void __launch_bounds__(BLOCK_X *BLOCK_Y)
         continue;
 
       T = T / (1.f - alpha);
-      const float dchannel_dcolor = alpha * T * r_i * I_i;
+      const float dchannel_dcolor = alpha * T;//* r_i * I_i;
 
       // Propagate gradients to per-Gaussian colors and keep
       // gradients w.r.t. alpha (blending factor for a Gaussian/pixel
@@ -599,11 +599,13 @@ __global__ void __launch_bounds__(BLOCK_X *BLOCK_Y)
       {
         const float c = collected_colors[ch * BLOCK_SIZE + j];
         // Update last color (to be used in the next iteration)
-        accum_rec[ch] = last_alpha * last_color[ch] * last_R * last_I + (1.f - last_alpha) * accum_rec[ch];
+        accum_rec[ch] = last_alpha * last_color[ch] + (1.f - last_alpha) * accum_rec[ch];
+        // accum_rec[ch] = last_alpha * last_color[ch] * last_R * last_I + (1.f - last_alpha) * accum_rec[ch];
         last_color[ch] = c;
 
         const float dL_dchannel = dL_dpixel[ch];
-        dL_dalpha += (r_i * I_i * c - accum_rec[ch]) * dL_dchannel;
+        dL_dalpha += (c - accum_rec[ch]) * dL_dchannel;
+        // dL_dalpha += (r_i * I_i * c - accum_rec[ch]) * dL_dchannel;
         dL_dR += c * dL_dchannel;
         dL_dI += c * dL_dchannel;
         // Update the gradients w.r.t. color of the Gaussian.
