@@ -657,8 +657,8 @@ __global__ void __launch_bounds__(BLOCK_X *BLOCK_Y)
 
       // Update gradients w.r.t. opacity of the Gaussian
       atomicAdd(&(dL_dopacity[global_id]), G * dL_dalpha);
-      atomicAdd(&(dL_dreflect_factor[global_id]), dL_dR);
-      atomicAdd(&(dL_dillumination[global_id]), dL_dI);
+      // atomicAdd(&(dL_dreflect_factor[global_id]), dL_dR);
+      // atomicAdd(&(dL_dillumination[global_id]), dL_dI);
       dL_dreflect_factor[global_id] = 0;
       dL_dillumination[global_id] = 0;
     }
