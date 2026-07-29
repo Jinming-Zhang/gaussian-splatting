@@ -479,7 +479,8 @@ __global__ void __launch_bounds__(BLOCK_X *BLOCK_Y)
         // float linearVal = (expf(tmp) - 1) / (2.71828f - 1);
 
         // C[ch] += linearVal * alpha * T;
-        C[ch] += (I * r_f * featureVal * alpha * T);
+        // C[ch] += (I * r_f * featureVal * alpha * T);
+        C[ch] += (featureVal * alpha * T);
       }
 
       if (invdepth)
