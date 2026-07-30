@@ -571,11 +571,11 @@ __global__ void __launch_bounds__(BLOCK_X *BLOCK_Y)
       const float2 d = {xy.x - pixf.x, xy.y - pixf.y};
       const float4 con_o = collected_conic_opacity[j];
 
-      // const float r_i = collected_reflect_factor[j];
-      // const float I_i = collected_illumination[j];
+      const float r_i = collected_reflect_factor[j];
+      const float I_i = collected_illumination[j];
 
-      const float r_i = 0.731f;
-      const float I_i = 0.731f;
+      // const float r_i = 0.731f;
+      // const float I_i = 0.731f;
 
       const float power = -0.5f * (con_o.x * d.x * d.x + con_o.z * d.y * d.y) - con_o.y * d.x * d.y;
       if (power > 0.0f)
@@ -628,7 +628,7 @@ __global__ void __launch_bounds__(BLOCK_X *BLOCK_Y)
         atomicAdd(&(dL_dinvdepths[global_id]), dchannel_dcolor * dL_invdepth);
       }
 
-      dL_dalpha *= T;
+      dL_dalpha *= (T*r_i*I_i);
       dL_dR *= dchannel_dR;
       dL_dI *= dchannel_dI;
       // Update last alpha (to be used in the next iteration)
