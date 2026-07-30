@@ -625,8 +625,8 @@ __global__ void __launch_bounds__(BLOCK_X *BLOCK_Y)
       }
 
       dL_dalpha *= T;
-      dL_dR *= (T * alpha * I_i);
-      dL_dI *= (T * alpha * r_i);
+      dL_dR *= (T * alpha);// * I_i);
+      dL_dI *= (T * alpha);// * r_i);
       // Update last alpha (to be used in the next iteration)
       last_alpha = alpha;
       last_R = r_i;
