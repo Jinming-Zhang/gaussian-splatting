@@ -525,8 +525,6 @@ __global__ void __launch_bounds__(BLOCK_X *BLOCK_Y)
   }
 
   float last_alpha = 0;
-  float last_R = 0;
-  float last_I = 0;
   float last_color[C] = {0};
   float last_invdepth = 0;
 
@@ -590,6 +588,8 @@ __global__ void __launch_bounds__(BLOCK_X *BLOCK_Y)
 
       T = T / (1.f - alpha);
       const float dchannel_dcolor = alpha * T * r_i * I_i;
+      const float dchannel_dR = alpha * T * I_i;
+      const float dchannel_dI = alpha * T * r_i;
 
       // Propagate gradients to per-Gaussian colors and keep
       // gradients w.r.t. alpha (blending factor for a Gaussian/pixel
@@ -608,10 +608,10 @@ __global__ void __launch_bounds__(BLOCK_X *BLOCK_Y)
         last_color[ch] = c;
 
         const float dL_dchannel = dL_dpixel[ch];
-        // dL_dalpha += (c - accum_rec[ch]) * dL_dchannel; // this is original code
-        dL_dalpha += (r_i * I_i * c - accum_rec[ch]) * dL_dchannel;
-        dL_dR += c * dL_dchannel;
-        dL_dI += c * dL_dchannel;
+        dL_dalpha += (c - accum_rec[ch]) * dL_dchannel; // this is original code
+        // dL_dalpha += (r_i * I_i * c - accum_rec[ch]) * dL_dchannel;
+        dL_dR += (c * dL_dchannel);
+        dL_dI += (c * dL_dchannel);
         // Update the gradients w.r.t. color of the Gaussian.
         // Atomic, since this pixel is just one of potentially
         // many that were affected by this Gaussian.
@@ -629,12 +629,10 @@ __global__ void __launch_bounds__(BLOCK_X *BLOCK_Y)
       }
 
       dL_dalpha *= T;
-      dL_dR *= (T * alpha * I_i);
-      dL_dI *= (T * alpha * r_i);
+      dL_dR *= dchannel_dR;
+      dL_dI *= dchannel_dI;
       // Update last alpha (to be used in the next iteration)
       last_alpha = alpha;
-      last_R = r_i;
-      last_I = I_i;
 
       // Account for fact that alpha also influences how much of
       // the background color is added if nothing left to blend
@@ -644,7 +642,7 @@ __global__ void __launch_bounds__(BLOCK_X *BLOCK_Y)
       dL_dalpha += (-T_final / (1.f - alpha)) * bg_dot_dpixel;
 
       // Helpful reusable temporary variables
-      const float dL_dG = con_o.w * dL_dalpha;
+      const float dL_dG = con_o.w * dL_dalpha; // G is exponent value, e^power
       const float gdx = G * d.x;
       const float gdy = G * d.y;
       const float dG_ddelx = -gdx * con_o.x - gdy * con_o.y;
@@ -661,10 +659,9 @@ __global__ void __launch_bounds__(BLOCK_X *BLOCK_Y)
 
       // Update gradients w.r.t. opacity of the Gaussian
       atomicAdd(&(dL_dopacity[global_id]), G * dL_dalpha);
-      // atomicAdd(&(dL_dreflect_factor[global_id]), dL_dR);
-      // atomicAdd(&(dL_dillumination[global_id]), dL_dI);
-      dL_dreflect_factor[global_id] = 0;
-      dL_dillumination[global_id] = 0;
+
+      atomicAdd(&(dL_dreflect_factor[global_id]), dL_dR);
+      atomicAdd(&(dL_dillumination[global_id]), dL_dI);
     }
   }
 }
