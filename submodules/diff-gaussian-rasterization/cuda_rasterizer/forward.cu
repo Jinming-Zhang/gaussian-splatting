@@ -369,6 +369,7 @@ __global__ void __launch_bounds__(BLOCK_X *BLOCK_Y)
         float *__restrict__ maxFeatureVal,
         const int configFlags)
 {
+            *minFeatureVal = 12;//RENDER_MODE;
   // Identify current tile and associated min/max pixel range.
   auto block = cg::this_thread_block();
   uint32_t horizontal_blocks = (W + BLOCK_X - 1) / BLOCK_X;
@@ -530,9 +531,8 @@ void FORWARD::render(
     float *maxFeatureVal,
     const int configFlags)
 {
-  int mode = 0;
-  parseRenderMode<<<1,1>>>(configFlags, &mode);
-  cudaMemcpyToSymbol(RENDER_MODE, &mode, sizeof(int));
+  parseRenderMode<<<1,1>>>(configFlags, &RENDER_MODE);
+  cudaDeviceSynchronize();
   renderCUDA<NUM_CHANNELS><<<grid, block>>>(
       ranges,
       point_list,

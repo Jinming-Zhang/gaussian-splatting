@@ -100,8 +100,6 @@ RasterizeGaussiansCUDA(
   // Replace the nullptr declarations with:
   torch::Tensor minFValTensor = torch::full({1}, std::numeric_limits<float>::max(), float_opts);
   torch::Tensor maxFValTensor = torch::full({1}, std::numeric_limits<float>::lowest(), float_opts);
-  float *minFVal = minFValTensor.data_ptr<float>();
-  float *maxFVal = maxFValTensor.data_ptr<float>();
 
   int rendered = 0;
 
@@ -114,6 +112,7 @@ RasterizeGaussiansCUDA(
       M = sh.size(1);
     }
 
+  printf("config val %d\n", configFlags);
     rendered = CudaRasterizer::Rasterizer::forward(
         geomFunc,
         binningFunc,
@@ -142,11 +141,11 @@ RasterizeGaussiansCUDA(
         antialiasing,
         radii.contiguous().data<int>(),
         debug,
-        minFVal,
-        maxFVal,
+        minFValTensor.data_ptr<float>(),
+        maxFValTensor.data_ptr<float>(),
         configFlags);
   }
-  printf("Render mode %f\n", minFVal);
+  std::cout<< "Render mode: " << minFValTensor.item<float>() << std::endl;
   // std::cout << "Min feature value: " << minFValTensor.item<float>() << ", Max feature value: " << maxFValTensor.item<float>() << std::endl;
   // std::cout << "number of gaussians:"<< P << std::endl;
   return std::make_tuple(rendered, out_color, radii, geomBuffer, binningBuffer, imgBuffer, out_invdepth);

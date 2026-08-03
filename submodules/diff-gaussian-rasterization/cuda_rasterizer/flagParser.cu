@@ -2,10 +2,10 @@
 
 // namespace
 // {
-  __device__ int flag_original = 0;
-  __device__ int flag_render_sh_base_only = 1 << 0;
-  __device__ int flag_render_sh_higher_order = 1 << 1;
-  __device__ int flag_log_learning = 1 << 2;
+__device__ int flag_original = 0;
+__device__ int flag_render_sh_base_only = 1 << 0;
+__device__ int flag_render_sh_higher_order = 1 << 1;
+__device__ int flag_log_learning = 1 << 2;
 // }
 
 __global__ void parseRenderMode(int flag, int *out)
@@ -14,11 +14,11 @@ __global__ void parseRenderMode(int flag, int *out)
   {
     *out = 0;
   }
-  if (flag_render_sh_base_only & flag)
+  else if (flag_render_sh_base_only & flag)
   {
     *out = 1;
   }
-  if (flag_render_sh_higher_order & flag)
+  else if (flag_render_sh_higher_order & flag)
   {
     *out = 2;
   }
@@ -30,5 +30,8 @@ __global__ void parseLearningMode(int flag, int *out)
   {
     *out = 1;
   }
-  *out = 0;
+  else
+  {
+    *out = 0;
+  }
 }
