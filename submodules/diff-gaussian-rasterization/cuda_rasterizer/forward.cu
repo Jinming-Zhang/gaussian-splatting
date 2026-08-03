@@ -18,8 +18,8 @@
 #include <cooperative_groups/reduce.h>
 namespace cg = cooperative_groups;
 
-__device__ static int RENDER_MODE = 0;
-__device__ static bool TRACK_SH_RANGE = false;
+__device__ int RENDER_MODE = 0;
+__device__ bool TRACK_SH_RANGE = false;
 
 // Forward method for converting the input spherical harmonics
 // coefficients of each Gaussian to a simple RGB color.
@@ -304,7 +304,7 @@ __global__ void preprocessCUDA(int P, int D, int M,
     return;
   float det_inv = 1.f / det;
   // conic is the inverse of the 2d covariance matrix, 3 values because it's symmetric
-  float3 conic = {cov.z * det_inv, -cov.y * det_inv, cov.x * det_inv}; 
+  float3 conic = {cov.z * det_inv, -cov.y * det_inv, cov.x * det_inv};
 
   // Compute extent in screen space (by finding eigenvalues of
   // 2D covariance matrix). Use extent to compute a bounding rectangle
@@ -369,7 +369,7 @@ __global__ void __launch_bounds__(BLOCK_X *BLOCK_Y)
         float *__restrict__ maxFeatureVal,
         const int configFlags)
 {
-            *minFeatureVal = 12;//RENDER_MODE;
+  *minFeatureVal = 12; // RENDER_MODE;
   // Identify current tile and associated min/max pixel range.
   auto block = cg::this_thread_block();
   uint32_t horizontal_blocks = (W + BLOCK_X - 1) / BLOCK_X;
@@ -461,8 +461,8 @@ __global__ void __launch_bounds__(BLOCK_X *BLOCK_Y)
       for (int ch = 0; ch < CHANNELS; ch++)
       {
         // C[ch] += features[collected_id[j] * CHANNELS + ch] * alpha * T;
-        float featureVal = features[collected_id[j] * CHANNELS + ch]; 
-            *minFeatureVal = RENDER_MODE;
+        float featureVal = features[collected_id[j] * CHANNELS + ch];
+        *minFeatureVal = RENDER_MODE;
         if (TRACK_SH_RANGE)
         {
           if (featureVal < *minFeatureVal)
@@ -531,7 +531,9 @@ void FORWARD::render(
     float *maxFeatureVal,
     const int configFlags)
 {
-  parseRenderMode<<<1,1>>>(configFlags, &RENDER_MODE);
+  int *modeP;
+  cudaGetSymbolAddress((void **)&modeP, RENDER_MODE);
+  parseRenderMode<<<1, 1>>>(configFlags, modeP);
   cudaDeviceSynchronize();
   renderCUDA<NUM_CHANNELS><<<grid, block>>>(
       ranges,
