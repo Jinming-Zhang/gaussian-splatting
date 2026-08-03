@@ -8,7 +8,7 @@ __device__ int flag_render_sh_higher_order = 1 << 1;
 __device__ int flag_log_learning = 1 << 2;
 // }
 
-__global__ void parseRenderMode(int flag, int *out)
+__global__ void parseRenderMode(int flag, int *__restrict__ out)
 {
   if (flag_original | flag == 0)
   {
@@ -24,7 +24,7 @@ __global__ void parseRenderMode(int flag, int *out)
   }
 }
 
-__global__ void parseLearningMode(int flag, int *out)
+__global__ void parseLearningMode(int flag, int *__restrict__ out)
 {
   if (flag_log_learning & flag)
   {
