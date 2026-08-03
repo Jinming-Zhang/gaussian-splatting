@@ -14,6 +14,11 @@ import math
 from diff_gaussian_rasterization import GaussianRasterizationSettings, GaussianRasterizer, get_reflect_consistent_term
 from scene.gaussian_model import GaussianModel
 from utils.sh_utils import eval_sh
+from enum import IntFlag, auto
+
+class RenderMode(IntFlag):
+    REFLECTANCE = auto()
+    SHADING = auto()
 
 def get_per_gaussian_reflect_consistency_loss(pc:GaussianModel):
     """
@@ -45,9 +50,9 @@ def render(viewpoint_camera, pc: GaussianModel, pipe, bg_color: torch.Tensor, sc
 
     render_mode_int = 0
     if (render_mode == "reflectance"):
-        render_mode_int = 1
+        render_mode_int = int(RenderMode.REFLECTANCE)
     elif (render_mode == "shading"):
-        render_mode_int = 2
+        render_mode_int = int(RenderMode.SHADING)
 
     raster_settings = GaussianRasterizationSettings(
         image_height=int(viewpoint_camera.image_height),

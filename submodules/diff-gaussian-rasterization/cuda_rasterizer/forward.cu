@@ -12,6 +12,7 @@
 #include "forward.h"
 #include "auxiliary.h"
 #include "logHelper.h"
+#include "flagParser.h"
 #include <limits>
 #include <cooperative_groups.h>
 #include <cooperative_groups/reduce.h>
@@ -460,6 +461,7 @@ __global__ void __launch_bounds__(BLOCK_X *BLOCK_Y)
       {
         // C[ch] += features[collected_id[j] * CHANNELS + ch] * alpha * T;
         float featureVal = features[collected_id[j] * CHANNELS + ch]; 
+            *minFeatureVal = RENDER_MODE;
         if (TRACK_SH_RANGE)
         {
           if (featureVal < *minFeatureVal)
@@ -528,7 +530,9 @@ void FORWARD::render(
     float *maxFeatureVal,
     const int configFlags)
 {
-  cudaMemcpyToSymbol(RENDER_MODE, &configFlags, sizeof(int));
+  int mode = 0;
+  parseRenderMode<<<1,1>>>(configFlags, &mode);
+  cudaMemcpyToSymbol(RENDER_MODE, &mode, sizeof(int));
   renderCUDA<NUM_CHANNELS><<<grid, block>>>(
       ranges,
       point_list,

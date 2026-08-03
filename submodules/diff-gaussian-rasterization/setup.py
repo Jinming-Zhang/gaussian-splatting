@@ -22,6 +22,7 @@ setup(
         CUDAExtension(
             name="diff_gaussian_rasterization._C",
             sources=[
+            "cuda_rasterizer/flagParser.cu",
             "cuda_rasterizer/rasterizer_impl.cu",
             "cuda_rasterizer/forward.cu",
             "cuda_rasterizer/backward.cu",
