@@ -116,7 +116,7 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
             image *= alpha_mask
 
         # Loss
-        perGaussianUpdateInterval = 250
+        perGaussianUpdateInterval = 150
         perGaussianLoss =0
         if(iteration % perGaussianUpdateInterval == 0):
           perGaussianLoss = get_per_gaussian_reflect_consistency_loss(gaussians).mean()
@@ -147,7 +147,7 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
         else:
             Ll1depth = 0
 
-        loss = 0.9 * loss + 0.1 * perGaussianLoss
+        loss = 0.7 * loss + 0.3 * perGaussianLoss
         loss.backward()
 
         iter_end.record()
