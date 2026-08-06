@@ -115,13 +115,6 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
             alpha_mask = viewpoint_cam.alpha_mask.cuda()
             image *= alpha_mask
 
-        # Loss
-        perGaussianUpdateInterval = 150
-        perGaussianLoss =0
-        if(iteration % perGaussianUpdateInterval == 0):
-          perGaussianLoss = get_per_gaussian_reflect_consistency_loss(gaussians).mean()
-        # alpha = 0.5
-        # beta = 0.5
         gt_image = viewpoint_cam.original_image.cuda()
         Ll1 = l1_loss(image, gt_image)
         # loss = alpha * (Ll1) + (1-alpha) * perGaussianLoss.mean() * beta
@@ -147,7 +140,16 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
         else:
             Ll1depth = 0
 
-        loss = 0.7 * loss + 0.3 * perGaussianLoss
+        # Loss
+        perGaussianUpdateInterval = 150
+        perGaussianLoss = 0
+        if(iteration % perGaussianUpdateInterval == 0):
+          perGaussianLoss = get_per_gaussian_reflect_consistency_loss(gaussians)
+          alpha = 0.5
+          beta = 0.5
+          RInverse = 1.0 / gaussians.get_reflect_factor()
+          loss2 = (alpha * perGaussianLoss + beta * RInverse).mean()
+          loss = 0.7 * loss + 0.3 * loss2
         loss.backward()
 
         iter_end.record()
