@@ -145,10 +145,11 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
         perGaussianLoss = 0
         if(iteration % perGaussianUpdateInterval == 0):
           perGaussianLoss = get_per_gaussian_reflect_consistency_loss(gaussians)
-          alpha = 0.9
-          beta = 0.1
-          RInverse = 1.0 / gaussians.get_reflect_factor
-          loss2 = (alpha * perGaussianLoss + beta * RInverse).mean()
+          # alpha = 0.9
+          # beta = 0.1
+          # RInverse = 1.0 / gaussians.get_reflect_factor
+          # loss2 = (alpha * perGaussianLoss + beta * RInverse).mean()
+          loss2 = perGaussianLoss.mean()
           loss = 0.9 * loss + 0.1 * loss2
         loss.backward()
 
