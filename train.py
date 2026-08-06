@@ -147,7 +147,7 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
           perGaussianLoss = get_per_gaussian_reflect_consistency_loss(gaussians)
           alpha = 0.5
           beta = 0.5
-          RInverse = 1.0 / gaussians.get_reflect_factor()
+          RInverse = 1.0 / gaussians.get_reflect_factor
           loss2 = (alpha * perGaussianLoss + beta * RInverse).mean()
           loss = 0.7 * loss + 0.3 * loss2
         loss.backward()
