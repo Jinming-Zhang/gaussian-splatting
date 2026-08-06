@@ -149,7 +149,7 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
           beta = 0.5
           RInverse = 1.0 / gaussians.get_reflect_factor
           loss2 = (alpha * perGaussianLoss + beta * RInverse).mean()
-          loss = 0.7 * loss + 0.3 * loss2
+          loss = 0.9 * loss + 0.1 * loss2
         loss.backward()
 
         iter_end.record()
