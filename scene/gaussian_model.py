@@ -307,8 +307,14 @@ class GaussianModel:
                         np.asarray(plydata.elements[0]["y"]),
                         np.asarray(plydata.elements[0]["z"])),  axis=1)
         opacities = np.asarray(plydata.elements[0]["opacity"])[..., np.newaxis]
-        reflect_factors = np.asarray(plydata.elements[0]["reflect_factor"])[..., np.newaxis]
-        illuminations = np.asarray(plydata.elements[0]["illumination"])[..., np.newaxis]
+        if("reflect_factor" not in plydata):
+            reflect_factors = np.ones((xyz.shape[0], 1))
+        else:
+            reflect_factors = np.asarray(plydata.elements[0]["reflect_factor"])[..., np.newaxis]
+        if ("illumination" not in plydata):
+            illuminations = np.ones((xyz.shape[0], 1))
+        else:
+            illuminations = np.asarray(plydata.elements[1]["illumination"])[..., np.newaxis]
 
         features_dc = np.zeros((xyz.shape[0], 3, 1))
         features_dc[:, 0, 0] = np.asarray(plydata.elements[0]["f_dc_0"])
