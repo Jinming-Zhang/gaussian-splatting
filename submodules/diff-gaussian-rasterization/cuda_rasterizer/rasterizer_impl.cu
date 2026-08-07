@@ -192,7 +192,6 @@ CudaRasterizer::GeometryState CudaRasterizer::GeometryState::fromChunk(char *&ch
   obtain(chunk, geom.cov3D, P * 6, 128);
   obtain(chunk, geom.conic_opacity, P, 128);
   obtain(chunk, geom.reflect_factor, P, 128);
-  obtain(chunk, geom.illumination, P, 128);
   obtain(chunk, geom.rgb, P * 3, 128);
   obtain(chunk, geom.tiles_touched, P, 128);
   cub::DeviceScan::InclusiveSum(nullptr, geom.scan_size, geom.tiles_touched, geom.tiles_touched, P);
@@ -239,7 +238,6 @@ int CudaRasterizer::Rasterizer::forward(
     const float *colors_precomp,
     const float *opacities,
     const float *reflect_factors,
-    const float *illumination,
     const float *scales,
     const float scale_modifier,
     const float *rotations,
@@ -294,7 +292,6 @@ int CudaRasterizer::Rasterizer::forward(
                  (glm::vec4 *)rotations,
                  opacities,
                  reflect_factors,
-                 illumination,
                  shs,
                  geomState.clamped,
                  cov3D_precomp,
@@ -311,7 +308,6 @@ int CudaRasterizer::Rasterizer::forward(
                  geomState.rgb,
                  geomState.conic_opacity,
                  geomState.reflect_factor,
-                 geomState.illumination,
                  tile_grid,
                  geomState.tiles_touched,
                  prefiltered,
@@ -375,7 +371,6 @@ int CudaRasterizer::Rasterizer::forward(
                  feature_ptr,
                  geomState.conic_opacity,
                  geomState.reflect_factor,
-                 geomState.illumination,
                  imgState.accum_alpha,
                  imgState.n_contrib,
                  background,
@@ -401,7 +396,6 @@ void CudaRasterizer::Rasterizer::backward(
     const float *colors_precomp,
     const float *opacities,
     const float *reflect_factors,
-    const float *illumination,
     float *gaussianNeighbors,
     const float *scales,
     const float scale_modifier,
@@ -421,7 +415,6 @@ void CudaRasterizer::Rasterizer::backward(
     float *dL_dconic,
     float *dL_dopacity,
     float *dL_dreflect_factor,
-    float *dL_dillumination,
     float *dL_dcolor,
     float *dL_dinvdepth,
     float *dL_dmean3D,
@@ -462,7 +455,6 @@ void CudaRasterizer::Rasterizer::backward(
                  geomState.means2D,
                  geomState.conic_opacity,
                  geomState.reflect_factor,
-                 geomState.illumination,
                  gaussianNeighbors,
                  color_ptr,
                  geomState.depths,
@@ -474,7 +466,6 @@ void CudaRasterizer::Rasterizer::backward(
                  (float4 *)dL_dconic,
                  dL_dopacity,
                  dL_dreflect_factor,
-                 dL_dillumination,
                  dL_dcolor,
                  dL_dinvdepth,
                  configFlags
@@ -492,7 +483,6 @@ void CudaRasterizer::Rasterizer::backward(
                                   geomState.clamped,
                                   opacities,
                                   reflect_factors,
-                                  illumination,
                                   gaussianNeighbors,
                                   (glm::vec3 *)scales,
                                   (glm::vec4 *)rotations,
@@ -508,7 +498,6 @@ void CudaRasterizer::Rasterizer::backward(
                                   dL_dinvdepth,
                                   dL_dopacity,
                                   dL_dreflect_factor,
-                                  dL_dillumination,
                                   (glm::vec3 *)dL_dmean3D,
                                   dL_dcolor,
                                   dL_dcov3D,
