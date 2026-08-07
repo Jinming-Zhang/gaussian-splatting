@@ -19,7 +19,6 @@
 namespace cg = cooperative_groups;
 
 __device__ int RENDER_MODE = 0;
-__device__ bool TRACK_SH_RANGE = false;
 
 // Forward method for converting the input spherical harmonics
 // coefficients of each Gaussian to a simple RGB color.
@@ -389,7 +388,7 @@ __global__ void __launch_bounds__(BLOCK_X *BLOCK_Y)
   __shared__ int collected_id[BLOCK_SIZE];
   __shared__ float2 collected_xy[BLOCK_SIZE];
   __shared__ float4 collected_conic_opacity[BLOCK_SIZE];
-  __shared__ float collected_reflect_factor[BLOCK_SIZE];
+  // __shared__ float collected_reflect_factor[BLOCK_SIZE];
 
   // Initialize helper variables
   float T = 1.0f;
@@ -415,7 +414,7 @@ __global__ void __launch_bounds__(BLOCK_X *BLOCK_Y)
       collected_id[block.thread_rank()] = coll_id;
       collected_xy[block.thread_rank()] = points_xy_image[coll_id];
       collected_conic_opacity[block.thread_rank()] = conic_opacity[coll_id];
-      collected_reflect_factor[block.thread_rank()] = reflect_factor[coll_id];
+      // collected_reflect_factor[block.thread_rank()] = reflect_factor[coll_id];
     }
     block.sync();
 
@@ -430,7 +429,6 @@ __global__ void __launch_bounds__(BLOCK_X *BLOCK_Y)
       float2 xy = collected_xy[j];
       float2 d = {xy.x - pixf.x, xy.y - pixf.y};
       float4 con_o = collected_conic_opacity[j];
-      float r_f = collected_reflect_factor[j];
       float power = -0.5f * (con_o.x * d.x * d.x + con_o.z * d.y * d.y) - con_o.y * d.x * d.y;
       if (power > 0.0f)
         continue;
@@ -454,21 +452,8 @@ __global__ void __launch_bounds__(BLOCK_X *BLOCK_Y)
       {
         // C[ch] += features[collected_id[j] * CHANNELS + ch] * alpha * T;
         float featureVal = features[collected_id[j] * CHANNELS + ch];
+      float r_f = reflect_factor[collected_id[j] * CHANNELS + ch];
         *minFeatureVal = RENDER_MODE;
-        if (TRACK_SH_RANGE)
-        {
-          if (featureVal < *minFeatureVal)
-          {
-            *minFeatureVal = featureVal;
-          }
-          else if (featureVal > *maxFeatureVal)
-          {
-            *maxFeatureVal = featureVal;
-          }
-          *minFeatureVal = r_f;
-          *maxFeatureVal = r_f;
-        }
-
         // log conversion
         // float tmp = featureVal / 2.0f;
         // float linearVal = (expf(tmp) - 1) / (2.71828f - 1);

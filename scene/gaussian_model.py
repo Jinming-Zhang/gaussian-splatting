@@ -170,7 +170,7 @@ class GaussianModel:
         rots[:, 0] = 1
 
         opacities = self.inverse_opacity_activation(0.1 * torch.ones((fused_point_cloud.shape[0], 1), dtype=torch.float, device="cuda"))
-        reflect_factor = torch.ones((fused_point_cloud.shape[0],1), dtype=torch.float, device="cuda")
+        reflect_factor = torch.ones((fused_point_cloud.shape[0],3), dtype=torch.float, device="cuda")
 
         self._xyz = nn.Parameter(fused_point_cloud.requires_grad_(True))
 
@@ -293,7 +293,7 @@ class GaussianModel:
                         np.asarray(plydata.elements[0]["z"])),  axis=1)
         opacities = np.asarray(plydata.elements[0]["opacity"])[..., np.newaxis]
         if("reflect_factor" not in plydata):
-            reflect_factors = np.ones((xyz.shape[0], 1))
+            reflect_factors = np.ones((xyz.shape[0], 3))
         else:
             reflect_factors = np.asarray(plydata.elements[0]["reflect_factor"])[..., np.newaxis]
 
@@ -448,7 +448,7 @@ class GaussianModel:
         new_features_dc = self._features_dc[selected_pts_mask].repeat(N,1,1)
         new_features_rest = self._features_rest[selected_pts_mask].repeat(N,1,1)
         new_opacity = self._opacity[selected_pts_mask].repeat(N,1)
-        new_reflect_factor = self._reflect_factor[selected_pts_mask].repeat(N,1)
+        new_reflect_factor = self._reflect_factor[selected_pts_mask].repeat(N,1,1)
         new_tmp_radii = self.tmp_radii[selected_pts_mask].repeat(N)
 
         self.densification_postfix(new_xyz, new_features_dc, new_features_rest, new_opacity, new_reflect_factor,  new_scaling, new_rotation, new_tmp_radii)

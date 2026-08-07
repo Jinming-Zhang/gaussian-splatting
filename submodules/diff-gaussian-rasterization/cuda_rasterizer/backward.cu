@@ -492,7 +492,7 @@ __global__ void __launch_bounds__(BLOCK_X *BLOCK_Y)
   __shared__ int collected_id[BLOCK_SIZE];
   __shared__ float2 collected_xy[BLOCK_SIZE];
   __shared__ float4 collected_conic_opacity[BLOCK_SIZE];
-  __shared__ float collected_reflect_factor[BLOCK_SIZE];
+  __shared__ float collected_reflect_factor[C * BLOCK_SIZE];
   __shared__ float collected_colors[C * BLOCK_SIZE];
   __shared__ float collected_depths[BLOCK_SIZE];
 
@@ -541,9 +541,11 @@ __global__ void __launch_bounds__(BLOCK_X *BLOCK_Y)
       collected_xy[block.thread_rank()] = points_xy_image[coll_id];
       collected_conic_opacity[block.thread_rank()] = conic_opacity[coll_id];
 
-      collected_reflect_factor[block.thread_rank()] = reflect_factor[coll_id];
       for (int i = 0; i < C; i++)
+      {
         collected_colors[i * BLOCK_SIZE + block.thread_rank()] = colors[coll_id * C + i];
+        collected_reflect_factor[i * BLOCK_SIZE + block.thread_rank()] = reflect_factor[coll_id * C + i];
+      }
 
       if (dL_invdepths)
         collected_depths[block.thread_rank()] = depths[coll_id];
@@ -564,7 +566,6 @@ __global__ void __launch_bounds__(BLOCK_X *BLOCK_Y)
       const float2 d = {xy.x - pixf.x, xy.y - pixf.y};
       const float4 con_o = collected_conic_opacity[j];
 
-      const float r_i = collected_reflect_factor[j];
 
       const float power = -0.5f * (con_o.x * d.x * d.x + con_o.z * d.y * d.y) - con_o.y * d.x * d.y;
       if (power > 0.0f)
@@ -576,32 +577,32 @@ __global__ void __launch_bounds__(BLOCK_X *BLOCK_Y)
         continue;
 
       T = T / (1.f - alpha);
-      const float dchannel_dcolor = alpha * T * r_i ;
-      const float dchannel_dR = alpha * T ;
-      const float dchannel_dI = alpha * T * r_i;
+      const float dchannel_dcolor = alpha * T;
+      const float dchannel_dR = alpha * T;
 
       // Propagate gradients to per-Gaussian colors and keep
       // gradients w.r.t. alpha (blending factor for a Gaussian/pixel
       // pair).
       float dL_dalpha = 0.0f;
-      float dL_dR = 0.0f;
 
       const int global_id = collected_id[j];
       for (int ch = 0; ch < C; ch++)
       {
         const float c = collected_colors[ch * BLOCK_SIZE + j];
+        const float r_i = collected_reflect_factor[ch * BLOCK_SIZE + j];
         // Update last color (to be used in the next iteration)
         accum_rec[ch] = last_alpha * last_color[ch] + (1.f - last_alpha) * accum_rec[ch];
         // accum_rec[ch] = last_alpha * last_color[ch] * last_R * last_I + (1.f - last_alpha) * accum_rec[ch];
-        last_color[ch] = c;
+        last_color[ch] = c * r_i;
 
         const float dL_dchannel = dL_dpixel[ch];
-        dL_dalpha += (c - accum_rec[ch]) * dL_dchannel; // this is original code
-        dL_dR += (c * dL_dchannel);
+        // dL_dalpha += (c - accum_rec[ch]) * dL_dchannel; // this is original code
+        dL_dalpha += (c * r_i - accum_rec[ch]) * dL_dchannel; // this is original code
         // Update the gradients w.r.t. color of the Gaussian.
         // Atomic, since this pixel is just one of potentially
         // many that were affected by this Gaussian.
-        atomicAdd(&(dL_dcolors[global_id * C + ch]), dchannel_dcolor * dL_dchannel);
+        atomicAdd(&(dL_dcolors[global_id * C + ch]), dchannel_dcolor * dL_dchannel * r_i);
+        atomicAdd(&(dL_dreflect_factor[global_id * C + ch]), dchannel_dcolor * dL_dchannel * c);
       }
       // Propagate gradients from inverse depth to alphaas and
       // per Gaussian inverse depths
@@ -615,7 +616,6 @@ __global__ void __launch_bounds__(BLOCK_X *BLOCK_Y)
       }
 
       dL_dalpha *= T;
-      dL_dR *= dchannel_dR;
       // Update last alpha (to be used in the next iteration)
       last_alpha = alpha;
 
@@ -644,8 +644,6 @@ __global__ void __launch_bounds__(BLOCK_X *BLOCK_Y)
 
       // Update gradients w.r.t. opacity of the Gaussian
       atomicAdd(&(dL_dopacity[global_id]), G * dL_dalpha);
-
-      atomicAdd(&(dL_dreflect_factor[global_id]), dL_dR);
     }
   }
 }

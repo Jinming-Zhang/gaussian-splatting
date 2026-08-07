@@ -101,8 +101,6 @@ RasterizeGaussiansCUDA(
   torch::Tensor maxFValTensor = torch::full({1}, std::numeric_limits<float>::lowest(), float_opts);
 
   int rendered = 0;
-
-  // std::cout << "r_f in value:" << reflect_factor[0].item<float>() << std::endl;
   if (P != 0)
   {
     int M = 0;
@@ -143,9 +141,6 @@ RasterizeGaussiansCUDA(
         maxFValTensor.data_ptr<float>(),
         configFlags);
   }
-  std::cout<< "Render mode: " << minFValTensor.item<float>() << std::endl;
-  // std::cout << "Min feature value: " << minFValTensor.item<float>() << ", Max feature value: " << maxFValTensor.item<float>() << std::endl;
-  // std::cout << "number of gaussians:"<< P << std::endl;
   return std::make_tuple(rendered, out_color, radii, geomBuffer, binningBuffer, imgBuffer, out_invdepth);
 }
 
@@ -182,25 +177,12 @@ RasterizeGaussiansBackwardCUDA(
   const int H = dL_dout_color.size(1);
   const int W = dL_dout_color.size(2);
 
-  // const std::vector<float> &gaussianGroupsLoss = CalcPerGaussianNeighborsRefLoss(means3D, reflect_factors);
-  // const std::vector<float> &gaussianGroupsLossCuda = CalcPerGaussianNeighborsRefLossCUDA(means3D, reflect_factors);
-
-  // CompareVectors(gaussianGroupsLoss, gaussianGroupsLossCuda);
-
-  // int noKeys = gaussianGroupsLoss.size();
-  // thrust::device_vector<float> d_gaussianGroupsLoss(gaussianGroupsLossCuda.begin(), gaussianGroupsLossCuda.end());
   thrust::device_vector<float> d_gaussianGroupsLoss(P, 0.0f);
   torch::Tensor gaussianGroupsLossTensor = torch::from_blob(
                                                thrust::raw_pointer_cast(d_gaussianGroupsLoss.data()),
                                                {P},
                                                means3D.options())
                                                .clone();
-  // std::cout << "first 3 group gf losses: " << gaussianGroupsLoss[0] << ", " << gaussianGroupsLoss[1] << ", " << gaussianGroupsLoss[2] << std::endl;
-
-  // int *devPtr = nullptr;
-  // size_t bytes = indices.size() * sizeof(int);
-  // cudaMalloc(&devPtr, bytes);
-  // cudaMemcpy(devPtr, indices.data(), bytes, cudaMemcpyHostToDevice);
 
   int M = 0;
   if (sh.size(0) != 0)
@@ -213,7 +195,7 @@ RasterizeGaussiansBackwardCUDA(
   torch::Tensor dL_dcolors = torch::zeros({P, NUM_CHANNELS}, means3D.options());
   torch::Tensor dL_dconic = torch::zeros({P, 2, 2}, means3D.options());
   torch::Tensor dL_dopacity = torch::zeros({P, 1}, means3D.options());
-  torch::Tensor dL_dreflect_factor = torch::zeros({P, 1}, means3D.options());
+  torch::Tensor dL_dreflect_factor = torch::zeros({P, NUM_CHANNELS}, means3D.options());
   torch::Tensor dL_dcov3D = torch::zeros({P, 6}, means3D.options());
   torch::Tensor dL_dsh = torch::zeros({P, M, 3}, means3D.options());
   torch::Tensor dL_dscales = torch::zeros({P, 3}, means3D.options());
