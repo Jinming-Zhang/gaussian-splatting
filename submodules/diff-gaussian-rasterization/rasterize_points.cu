@@ -109,7 +109,7 @@ RasterizeGaussiansCUDA(
       M = sh.size(1);
     }
 
-  printf("config val %d\n", configFlags);
+  // printf("config val %d\n", configFlags);
     rendered = CudaRasterizer::Rasterizer::forward(
         geomFunc,
         binningFunc,
