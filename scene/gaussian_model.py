@@ -448,7 +448,7 @@ class GaussianModel:
         new_features_dc = self._features_dc[selected_pts_mask].repeat(N,1,1)
         new_features_rest = self._features_rest[selected_pts_mask].repeat(N,1,1)
         new_opacity = self._opacity[selected_pts_mask].repeat(N,1)
-        new_reflect_factor = self._reflect_factor[selected_pts_mask].repeat(N,1,1)
+        new_reflect_factor = self._reflect_factor[selected_pts_mask].repeat(N,1)
         new_tmp_radii = self.tmp_radii[selected_pts_mask].repeat(N)
 
         self.densification_postfix(new_xyz, new_features_dc, new_features_rest, new_opacity, new_reflect_factor,  new_scaling, new_rotation, new_tmp_radii)
