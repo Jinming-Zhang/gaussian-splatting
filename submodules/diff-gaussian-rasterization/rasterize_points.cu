@@ -141,6 +141,7 @@ RasterizeGaussiansCUDA(
         maxFValTensor.data_ptr<float>(),
         configFlags);
   }
+  std::cout<<"r value"<<minFValTensor.item<float>()<<std::endl;
   return std::make_tuple(rendered, out_color, radii, geomBuffer, binningBuffer, imgBuffer, out_invdepth);
 }
 

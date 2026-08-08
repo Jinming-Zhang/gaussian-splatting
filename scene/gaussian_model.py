@@ -296,7 +296,7 @@ class GaussianModel:
         opacities = np.asarray(plydata.elements[0]["opacity"])[..., np.newaxis]
         if("r1" not in plydata):
             reflect_factors = np.ones((xyz.shape[0], 3))
-            print("No reflect factors found in ply file, setting to 0.0")
+            print("No reflect factors found in ply file, setting to 1.0")
         else:
             reflect_factors = np.stack((np.asarray(plydata.elements[0]["r1"]),
                         np.asarray(plydata.elements[0]["r2"]),

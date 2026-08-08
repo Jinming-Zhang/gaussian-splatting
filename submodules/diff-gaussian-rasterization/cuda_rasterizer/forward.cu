@@ -414,7 +414,6 @@ __global__ void __launch_bounds__(BLOCK_X *BLOCK_Y)
       collected_id[block.thread_rank()] = coll_id;
       collected_xy[block.thread_rank()] = points_xy_image[coll_id];
       collected_conic_opacity[block.thread_rank()] = conic_opacity[coll_id];
-      // collected_reflect_factor[block.thread_rank()] = reflect_factor[coll_id];
     }
     block.sync();
 
@@ -453,7 +452,7 @@ __global__ void __launch_bounds__(BLOCK_X *BLOCK_Y)
         // C[ch] += features[collected_id[j] * CHANNELS + ch] * alpha * T;
         float featureVal = features[collected_id[j] * CHANNELS + ch];
       float r_f = reflect_factor[collected_id[j] * CHANNELS + ch];
-        *minFeatureVal = RENDER_MODE;
+        *minFeatureVal = r_f;
         // log conversion
         // float tmp = featureVal / 2.0f;
         // float linearVal = (expf(tmp) - 1) / (2.71828f - 1);
