@@ -243,7 +243,9 @@ class GaussianModel:
         for i in range(self._features_rest.shape[1]*self._features_rest.shape[2]):
             l.append('f_rest_{}'.format(i))
         l.append('opacity')
-        l.append('reflect_factor')
+        l.append('r1')
+        l.append('r2')
+        l.append('r3')
         for i in range(self._scaling.shape[1]):
             l.append('scale_{}'.format(i))
         for i in range(self._rotation.shape[1]):
@@ -292,10 +294,13 @@ class GaussianModel:
                         np.asarray(plydata.elements[0]["y"]),
                         np.asarray(plydata.elements[0]["z"])),  axis=1)
         opacities = np.asarray(plydata.elements[0]["opacity"])[..., np.newaxis]
-        if("reflect_factor" not in plydata):
+        if("r1" not in plydata):
             reflect_factors = np.ones((xyz.shape[0], 3))
+            print("No reflect factors found in ply file, setting to 0.0")
         else:
-            reflect_factors = np.asarray(plydata.elements[0]["reflect_factor"])[..., np.newaxis]
+            reflect_factors = np.stack((np.asarray(plydata.elements[0]["r1"]),
+                        np.asarray(plydata.elements[0]["r2"]),
+                        np.asarray(plydata.elements[0]["r3"])),  axis=1)
 
         features_dc = np.zeros((xyz.shape[0], 3, 1))
         features_dc[:, 0, 0] = np.asarray(plydata.elements[0]["f_dc_0"])
