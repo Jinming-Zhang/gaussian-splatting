@@ -137,6 +137,9 @@ class GaussianModel:
     def get_reflect_factor(self):
         return self.reflect_activation(self._reflect_factor)
 
+    def get_reflect_factor_noactivation(self):
+        return self._reflect_factor
+
     @property
     def get_exposure(self):
         return self._exposure
@@ -197,7 +200,7 @@ class GaussianModel:
             {'params': [self._features_dc], 'lr': training_args.feature_lr, "name": "f_dc"},
             {'params': [self._features_rest], 'lr': training_args.feature_lr / 20.0, "name": "f_rest"},
             {'params': [self._opacity], 'lr': training_args.opacity_lr, "name": "opacity"},
-            {'params': [self._reflect_factor], 'lr': training_args.feature_lr, "name": "reflect_factor"},
+            # {'params': [self._reflect_factor], 'lr': training_args.feature_lr, "name": "reflect_factor"},
             {'params': [self._scaling], 'lr': training_args.scaling_lr, "name": "scaling"},
             {'params': [self._rotation], 'lr': training_args.rotation_lr, "name": "rotation"},
         ]
