@@ -333,10 +333,12 @@ __global__ void preprocessCUDA(int P, int D, int M,
   points_xy_image[idx] = point_image;
   // Inverse 2D covariance and opacity neatly pack into one float4
   float opacity = opacities[idx];
-  float r_f = reflect_factors[idx];
+  // float r_f = reflect_factors[idx*C+0];
 
   conic_opacity[idx] = {conic.x, conic.y, conic.z, opacity * h_convolution_scaling};
-  out_reflect_factor[idx] = r_f;
+  out_reflect_factor[idx*C+0] = reflect_factors[idx*C+0];
+  out_reflect_factor[idx*C+1] = reflect_factors[idx*C+1];
+  out_reflect_factor[idx*C+2] = reflect_factors[idx*C+2];
   tiles_touched[idx] = (rect_max.y - rect_min.y) * (rect_max.x - rect_min.x);
 }
 
