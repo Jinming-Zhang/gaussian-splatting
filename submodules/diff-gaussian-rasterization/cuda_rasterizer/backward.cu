@@ -590,8 +590,8 @@ __global__ void __launch_bounds__(BLOCK_X *BLOCK_Y)
       for (int ch = 0; ch < C; ch++)
       {
         const float c = collected_colors[ch * BLOCK_SIZE + j];
-        // const float r = collected_reflect_factor[ch * BLOCK_SIZE + j];
-        const float r = 0.731f;
+        const float r = collected_reflect_factor[ch * BLOCK_SIZE + j];
+        // const float r = 0.731f;
         // Update last color (to be used in the next iteration)
         // accum_rec[ch] = last_alpha * last_color[ch] + (1.f - last_alpha) * accum_rec[ch];
         accum_rec[ch] = last_alpha * last_color[ch] * last_r[ch] + (1.f - last_alpha) * accum_rec[ch];
@@ -608,8 +608,8 @@ __global__ void __launch_bounds__(BLOCK_X *BLOCK_Y)
         // atomicAdd(&(dL_dcolors[global_id * C + ch]), dchannel_dcolor * dL_dchannel);
 
         atomicAdd(&(dL_dcolors[global_id * C + ch]), dchannel_dcolor * dL_dchannel * r);
-        atomicAdd(&(dL_dreflect_factor[global_id * C + ch]), dchannel_dcolor * dL_dchannel * c);
-        // atomicAdd(&(dL_dreflect_factor[global_id * C + ch]), 0);
+        // atomicAdd(&(dL_dreflect_factor[global_id * C + ch]), dchannel_dcolor * dL_dchannel * c);
+        atomicAdd(&(dL_dreflect_factor[global_id * C + ch]), 0);
       }
       // Propagate gradients from inverse depth to alphaas and
       // per Gaussian inverse depths

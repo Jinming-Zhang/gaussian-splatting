@@ -457,8 +457,8 @@ __global__ void __launch_bounds__(BLOCK_X *BLOCK_Y)
       {
         // C[ch] += features[collected_id[j] * CHANNELS + ch] * alpha * T;
         float featureVal = features[collected_id[j] * CHANNELS + ch];
-        // float r_f = reflect_factor[collected_id[j] * CHANNELS + ch];
-        float r_f = 0.731f;
+        float r_f = reflect_factor[collected_id[j] * CHANNELS + ch];
+        // r_f = 0.731f;
         // log conversion
         // float tmp = featureVal / 2.0f;
         // float linearVal = (expf(tmp) - 1) / (2.71828f - 1);
