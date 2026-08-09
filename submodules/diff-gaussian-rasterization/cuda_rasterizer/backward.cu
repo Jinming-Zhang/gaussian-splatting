@@ -520,6 +520,7 @@ __global__ void __launch_bounds__(BLOCK_X *BLOCK_Y)
 
   float last_alpha = 0;
   float last_color[C] = {0};
+  float last_r[C] = {0};
   float last_invdepth = 0;
 
   // Gradient of pixel coordinate w.r.t. normalized
@@ -589,21 +590,25 @@ __global__ void __launch_bounds__(BLOCK_X *BLOCK_Y)
       for (int ch = 0; ch < C; ch++)
       {
         const float c = collected_colors[ch * BLOCK_SIZE + j];
-        const float r_i = collected_reflect_factor[ch * BLOCK_SIZE + j];
+        const float r = collected_reflect_factor[ch * BLOCK_SIZE + j];
         // Update last color (to be used in the next iteration)
-        accum_rec[ch] = last_alpha * last_color[ch] + (1.f - last_alpha) * accum_rec[ch];
-        // accum_rec[ch] = last_alpha * last_color[ch] * last_R * last_I + (1.f - last_alpha) * accum_rec[ch];
-        last_color[ch] = c * r_i;
+        // accum_rec[ch] = last_alpha * last_color[ch] + (1.f - last_alpha) * accum_rec[ch];
+        accum_rec[ch] = last_alpha * last_color[ch] * last_r[ch] + (1.f - last_alpha) * accum_rec[ch];
+
+        last_color[ch] = c; 
+        last_r[ch] = r;
 
         const float dL_dchannel = dL_dpixel[ch];
-        dL_dalpha += (c - accum_rec[ch]) * dL_dchannel; // this is original code
-        // dL_dalpha += (c * r_i - accum_rec[ch]) * dL_dchannel; // this is original code
+        // dL_dalpha += (c - accum_rec[ch]) * dL_dchannel; // this is original code
+        dL_dalpha += (c * r - accum_rec[ch]) * dL_dchannel; // this is original code
         // Update the gradients w.r.t. color of the Gaussian.
         // Atomic, since this pixel is just one of potentially
         // many that were affected by this Gaussian.
-        atomicAdd(&(dL_dcolors[global_id * C + ch]), dchannel_dcolor * dL_dchannel * r_i);
-        // atomicAdd(&(dL_dreflect_factor[global_id * C + ch]), dchannel_dcolor * dL_dchannel * c);
-        atomicAdd(&(dL_dreflect_factor[global_id * C + ch]), 0);
+        // atomicAdd(&(dL_dcolors[global_id * C + ch]), dchannel_dcolor * dL_dchannel);
+
+        atomicAdd(&(dL_dcolors[global_id * C + ch]), dchannel_dcolor * dL_dchannel * r);
+        atomicAdd(&(dL_dreflect_factor[global_id * C + ch]), dchannel_dcolor * dL_dchannel * c);
+        // atomicAdd(&(dL_dreflect_factor[global_id * C + ch]), 0);
       }
       // Propagate gradients from inverse depth to alphaas and
       // per Gaussian inverse depths
