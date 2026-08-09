@@ -590,17 +590,18 @@ __global__ void __launch_bounds__(BLOCK_X *BLOCK_Y)
       for (int ch = 0; ch < C; ch++)
       {
         const float c = collected_colors[ch * BLOCK_SIZE + j];
-        const float r = collected_reflect_factor[ch * BLOCK_SIZE + j];
+        // const float r = collected_reflect_factor[ch * BLOCK_SIZE + j];
+        const float r = 0.731f;
         // Update last color (to be used in the next iteration)
-        accum_rec[ch] = last_alpha * last_color[ch] + (1.f - last_alpha) * accum_rec[ch];
-        // accum_rec[ch] = last_alpha * last_color[ch] * last_r[ch] + (1.f - last_alpha) * accum_rec[ch];
+        // accum_rec[ch] = last_alpha * last_color[ch] + (1.f - last_alpha) * accum_rec[ch];
+        accum_rec[ch] = last_alpha * last_color[ch] * last_r[ch] + (1.f - last_alpha) * accum_rec[ch];
 
         last_color[ch] = c; 
         last_r[ch] = r;
 
         const float dL_dchannel = dL_dpixel[ch];
-        dL_dalpha += (c - accum_rec[ch]) * dL_dchannel; // this is original code
-        // dL_dalpha += (c * r - accum_rec[ch]) * dL_dchannel; // this is original code
+        // dL_dalpha += (c - accum_rec[ch]) * dL_dchannel; // this is original code
+        dL_dalpha += (c * r - accum_rec[ch]) * dL_dchannel; // this is original code
         // Update the gradients w.r.t. color of the Gaussian.
         // Atomic, since this pixel is just one of potentially
         // many that were affected by this Gaussian.

@@ -147,6 +147,7 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
         #   perGaussianLoss = get_per_gaussian_reflect_consistency_loss(gaussians)
         #   loss2 = perGaussianLoss.mean()
         #   loss = 0.9 * loss + 0.1 * loss2
+        torch.autograd.set_detect_anomaly(True)
         loss.backward()
 
         iter_end.record()

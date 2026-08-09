@@ -365,7 +365,6 @@ __global__ void __launch_bounds__(BLOCK_X *BLOCK_Y)
         float *__restrict__ maxFeatureVal,
         const int configFlags)
 {
-  *minFeatureVal = 12; // RENDER_MODE;
   // Identify current tile and associated min/max pixel range.
   auto block = cg::this_thread_block();
   uint32_t horizontal_blocks = (W + BLOCK_X - 1) / BLOCK_X;
@@ -448,13 +447,18 @@ __global__ void __launch_bounds__(BLOCK_X *BLOCK_Y)
         continue;
       }
 
+      // if(collected_id[j]==72707)
+      // {
+      //   *minFeatureVal = reflect_factor[collected_id[j] * CHANNELS + 0];
+      //   *maxFeatureVal = reflect_factor[collected_id[j] * CHANNELS + 1];
+      // }
       // Eq. (3) from 3D Gaussian splatting paper.
       for (int ch = 0; ch < CHANNELS; ch++)
       {
         // C[ch] += features[collected_id[j] * CHANNELS + ch] * alpha * T;
         float featureVal = features[collected_id[j] * CHANNELS + ch];
-      float r_f = reflect_factor[collected_id[j] * CHANNELS + ch];
-        *minFeatureVal = r_f;
+        // float r_f = reflect_factor[collected_id[j] * CHANNELS + ch];
+        float r_f = 0.731f;
         // log conversion
         // float tmp = featureVal / 2.0f;
         // float linearVal = (expf(tmp) - 1) / (2.71828f - 1);
