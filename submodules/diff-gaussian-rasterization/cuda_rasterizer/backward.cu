@@ -608,8 +608,8 @@ __global__ void __launch_bounds__(BLOCK_X *BLOCK_Y)
         // atomicAdd(&(dL_dcolors[global_id * C + ch]), dchannel_dcolor * dL_dchannel);
 
         atomicAdd(&(dL_dcolors[global_id * C + ch]), dchannel_dcolor * dL_dchannel * r);
-        atomicAdd(&(dL_dreflect_factor[global_id * C + ch]), dchannel_dcolor * dL_dchannel * c);
-        // atomicAdd(&(dL_dreflect_factor[global_id * C + ch]), 0);
+        // atomicAdd(&(dL_dreflect_factor[global_id * C + ch]), dchannel_dcolor * dL_dchannel * c);
+        atomicAdd(&(dL_dreflect_factor[global_id * C + ch]), 0);
       }
       // Propagate gradients from inverse depth to alphaas and
       // per Gaussian inverse depths
