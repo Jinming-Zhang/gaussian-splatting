@@ -24,14 +24,22 @@ __global__ void calcNeighborLossSumCUDA(const float *means, const int P, const f
     return;
   }
 
+  int clrChannel = 3;
   int gaussianIdx = indices[idx];
-  float r_i = rfs[gaussianIdx];
+  int r_index = gaussianIdx * clrChannel;
+  float r_1 = rfs[r_index];
+  float r_2 = rfs[r_index + 1];
+  float r_3 = rfs[r_index + 2];
+
   float refLossForGi = 0.0f;
 
   for (int j = 0; j < numIndicies; ++j)
   {
-    float r_j = rfs[indices[j]];
-    refLossForGi += fabsf(r_j - r_i);
+    int r_j_index = indices[j] * clrChannel;
+    float r_j_1 = rfs[r_j_index];
+    float r_j_2 = rfs[r_j_index + 1];
+    float r_j_3 = rfs[r_j_index + 2];
+    refLossForGi += fabsf(r_j_1 - r_1) + fabsf(r_j_2 - r_2) + fabsf(r_j_3 - r_3);
   }
   out[gaussianIdx] = refLossForGi;
 }
