@@ -44,7 +44,7 @@ class GaussianModel:
         self.opacity_activation = torch.sigmoid
         self.inverse_opacity_activation = inverse_sigmoid
 
-        self.reflect_activation = torch.sigmoid # no need inverse activate since we not resetting it
+        # self.reflect_activation = torch.sigmoid # no need inverse activate since we not resetting it
         self.rotation_activation = torch.nn.functional.normalize
   
 
@@ -135,7 +135,7 @@ class GaussianModel:
     
     @property
     def get_reflect_factor(self):
-        return self.reflect_activation(self._reflect_factor)
+        return self._reflect_factor
 
     def get_reflect_factor_noactivation(self):
         return self._reflect_factor
@@ -198,7 +198,7 @@ class GaussianModel:
 
         l = [
             {'params': [self._xyz], 'lr': training_args.position_lr_init * self.spatial_lr_scale, "name": "xyz"},
-            {'params': [self._features_dc], 'lr': training_args.feature_lr, "name": "f_dc"},
+            {'params': [self._features_dc], 'lr': training_args.feature_lr/15.0, "name": "f_dc"},
             {'params': [self._features_rest], 'lr': training_args.feature_lr / 20.0, "name": "f_rest"},
             {'params': [self._opacity], 'lr': training_args.opacity_lr, "name": "opacity"},
             {'params': [self._reflect_factor], 'lr': training_args.feature_lr, "name": "reflect_factor"},
