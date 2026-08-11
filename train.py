@@ -141,7 +141,7 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
             Ll1depth = 0
 
         # Loss
-        perGaussianUpdateInterval = 150
+        perGaussianUpdateInterval = 350
         perGaussianLoss = 0
         if(iteration % perGaussianUpdateInterval == 0):
           perGaussianLoss = get_per_gaussian_reflect_consistency_loss(gaussians)
