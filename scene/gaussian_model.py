@@ -162,7 +162,9 @@ class GaussianModel:
         fused_point_cloud = torch.tensor(np.asarray(pcd.points)).float().cuda()
         fused_color = RGB2SH(torch.tensor(np.asarray(pcd.colors)).float().cuda())
         features = torch.zeros((fused_color.shape[0], 3, (self.max_sh_degree + 1) ** 2)).float().cuda()
-        features[:, :3, 0 ] = fused_color
+        # features[:, :3, 0 ] = fused_color
+        features[:, :3, 0 ] = torch.ones((fused_point_cloud.shape[0],3), dtype=torch.float, device="cuda")
+
         features[:, 3:, 1:] = 0.0
 
         print("Number of points at initialisation : ", fused_point_cloud.shape[0])
@@ -173,8 +175,8 @@ class GaussianModel:
         rots[:, 0] = 1
 
         opacities = self.inverse_opacity_activation(0.1 * torch.ones((fused_point_cloud.shape[0], 1), dtype=torch.float, device="cuda"))
-        reflect_factor = torch.ones((fused_point_cloud.shape[0],3), dtype=torch.float, device="cuda")
-        # reflect_factor = fused_color
+        # reflect_factor = torch.ones((fused_point_cloud.shape[0],3), dtype=torch.float, device="cuda")
+        reflect_factor = fused_color
 
         self._xyz = nn.Parameter(fused_point_cloud.requires_grad_(True))
 
@@ -198,7 +200,7 @@ class GaussianModel:
 
         l = [
             {'params': [self._xyz], 'lr': training_args.position_lr_init * self.spatial_lr_scale, "name": "xyz"},
-            {'params': [self._features_dc], 'lr': training_args.feature_lr, "name": "f_dc"},
+            {'params': [self._features_dc], 'lr': training_args.feature_lr/20, "name": "f_dc"},
             {'params': [self._features_rest], 'lr': training_args.feature_lr / 20.0, "name": "f_rest"},
             {'params': [self._opacity], 'lr': training_args.opacity_lr, "name": "opacity"},
             # {'params': [self._reflect_factor], 'lr': training_args.feature_lr/20.0, "name": "reflect_factor"},
