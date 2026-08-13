@@ -141,14 +141,14 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
             Ll1depth = 0
 
         # Loss
-        startIt=1000
-        endIt = 15000
-        perGaussianUpdateInterval = 200
-        perGaussianLoss = 0
-        if(iteration>=startIt and iteration<=endIt and iteration % perGaussianUpdateInterval == 0):
-          perGaussianLoss = get_per_gaussian_reflect_consistency_loss(gaussians)
-          loss2 = perGaussianLoss.mean()
-          loss = 0.9 * loss + 0.1 * loss2
+        # startIt=1000
+        # endIt = 15000
+        # perGaussianUpdateInterval = 200
+        # perGaussianLoss = 0
+        # if(iteration>=startIt and iteration<=endIt and iteration % perGaussianUpdateInterval == 0):
+        #   perGaussianLoss = get_per_gaussian_reflect_consistency_loss(gaussians)
+        #   loss2 = perGaussianLoss.mean()
+        #   loss = 0.9 * loss + 0.1 * loss2
         loss.backward()
 
         iter_end.record()
