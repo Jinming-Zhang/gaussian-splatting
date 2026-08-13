@@ -165,8 +165,10 @@ class GaussianModel:
         # features[:, :3, 0 ] = fused_color
         # features[:, 3:, 1:] = 0.0
 
-        # features[:, :3, 0 ] = torch.ones((fused_point_cloud.shape[0],3), dtype=torch.float, device="cuda")
-        features[:, :3, 0 ] = fused_color * 0.1
+        initial_features = torch.ones((fused_point_cloud.shape[0],3), dtype=torch.float, device="cuda")
+        initial_features = RGB2SH(initial_features)
+        features[:, :3, 0 ] = initial_features
+        # features[:, :3, 0 ] = fused_color * 0.1
         features[:, 3:, 1:] = 0.0
         # reflect_factor = torch.ones((fused_point_cloud.shape[0],3), dtype=torch.float, device="cuda")
         reflect_factor = fused_point_cloud
