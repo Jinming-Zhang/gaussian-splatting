@@ -163,9 +163,13 @@ class GaussianModel:
         fused_color = RGB2SH(torch.tensor(np.asarray(pcd.colors)).float().cuda())
         features = torch.zeros((fused_color.shape[0], 3, (self.max_sh_degree + 1) ** 2)).float().cuda()
         # features[:, :3, 0 ] = fused_color
-        features[:, :3, 0 ] = torch.ones((fused_point_cloud.shape[0],3), dtype=torch.float, device="cuda")
+        # features[:, 3:, 1:] = 0.0
 
+        # features[:, :3, 0 ] = torch.ones((fused_point_cloud.shape[0],3), dtype=torch.float, device="cuda")
+        features[:, :3, 0 ] = fused_color * 0.1
         features[:, 3:, 1:] = 0.0
+        # reflect_factor = torch.ones((fused_point_cloud.shape[0],3), dtype=torch.float, device="cuda")
+        reflect_factor = pcd.colors
 
         print("Number of points at initialisation : ", fused_point_cloud.shape[0])
 
@@ -175,8 +179,6 @@ class GaussianModel:
         rots[:, 0] = 1
 
         opacities = self.inverse_opacity_activation(0.1 * torch.ones((fused_point_cloud.shape[0], 1), dtype=torch.float, device="cuda"))
-        # reflect_factor = torch.ones((fused_point_cloud.shape[0],3), dtype=torch.float, device="cuda")
-        reflect_factor = fused_color
 
         self._xyz = nn.Parameter(fused_point_cloud.requires_grad_(True))
 
@@ -197,6 +199,7 @@ class GaussianModel:
         self.percent_dense = training_args.percent_dense
         self.xyz_gradient_accum = torch.zeros((self.get_xyz.shape[0], 1), device="cuda")
         self.denom = torch.zeros((self.get_xyz.shape[0], 1), device="cuda")
+        r_learning_rate = training_args.feature_lr
 
         l = [
             {'params': [self._xyz], 'lr': training_args.position_lr_init * self.spatial_lr_scale, "name": "xyz"},
@@ -204,7 +207,7 @@ class GaussianModel:
             {'params': [self._features_rest], 'lr': training_args.feature_lr / 20.0, "name": "f_rest"},
             {'params': [self._opacity], 'lr': training_args.opacity_lr, "name": "opacity"},
             # {'params': [self._reflect_factor], 'lr': training_args.feature_lr/20.0, "name": "reflect_factor"},
-            {'params': [self._reflect_factor], 'lr': training_args.feature_lr, "name": "reflect_factor"},
+            {'params': [self._reflect_factor], 'lr': r_learning_rate, "name": "reflect_factor"},
             {'params': [self._scaling], 'lr': training_args.scaling_lr, "name": "scaling"},
             {'params': [self._rotation], 'lr': training_args.rotation_lr, "name": "rotation"},
         ]
