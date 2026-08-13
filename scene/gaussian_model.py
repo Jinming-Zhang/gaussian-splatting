@@ -169,7 +169,7 @@ class GaussianModel:
         features[:, :3, 0 ] = fused_color * 0.1
         features[:, 3:, 1:] = 0.0
         # reflect_factor = torch.ones((fused_point_cloud.shape[0],3), dtype=torch.float, device="cuda")
-        reflect_factor = pcd.colors
+        reflect_factor = fused_point_cloud
 
         print("Number of points at initialisation : ", fused_point_cloud.shape[0])
 
