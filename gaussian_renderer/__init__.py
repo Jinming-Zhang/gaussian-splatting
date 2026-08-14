@@ -16,11 +16,13 @@ from scene.gaussian_model import GaussianModel
 from utils.sh_utils import eval_sh
 from enum import IntFlag, auto
 
+
 class RenderMode(IntFlag):
     REFLECTANCE = auto()
     SHADING = auto()
 
-def get_per_gaussian_reflect_consistency_loss(pc:GaussianModel):
+
+def get_per_gaussian_reflect_consistency_loss(pc: GaussianModel):
     """
     Computes the per-Gaussian reflect consistency loss for a given GaussianModel.
     This function is useful for evaluating the consistency of reflectance factors across neighboring Gaussians.
@@ -28,6 +30,7 @@ def get_per_gaussian_reflect_consistency_loss(pc:GaussianModel):
     means3D = pc.get_xyz
     reflect_factors = pc.get_reflect_factor
     return get_reflect_consistent_term(means3D, reflect_factors)
+
 
 def render(viewpoint_camera, pc: GaussianModel, pipe, bg_color: torch.Tensor, scaling_modifier=1.0, separate_sh=False, override_color=None, use_trained_exp=False, render_mode="all"):
     """
@@ -144,7 +147,10 @@ def render(viewpoint_camera, pc: GaussianModel, pipe, bg_color: torch.Tensor, sc
 
     # Those Gaussians that were frustum culled or had a radius of 0 were not visible.
     # They will be excluded from value updates used in the splitting criteria.
-    rendered_image = rendered_image.clamp(0, 1)
+    if (render_mode == "reflectance"):
+        rendered_image = rendered_image / rendered_image.max()
+    else:
+        rendered_image = rendered_image.clamp(0, 1)
     # rendered_image = torch.pow(rendered_image, 1/2.2)
 
     out = {
