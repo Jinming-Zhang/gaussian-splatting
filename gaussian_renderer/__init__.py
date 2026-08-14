@@ -128,8 +128,8 @@ def render(viewpoint_camera, pc: GaussianModel, pipe, bg_color: torch.Tensor, sc
 
     # Those Gaussians that were frustum culled or had a radius of 0 were not visible.
     # They will be excluded from value updates used in the splitting criteria.
-    # rendered_image = rendered_image.clamp(0, 1)
-    # rendered_image = torch.pow(rendered_image, 1/2.2)
+    rendered_image = rendered_image.clamp(0, 1)
+    rendered_image = torch.pow(rendered_image, 1/2.2)
 
     out = {
         "render": rendered_image,
