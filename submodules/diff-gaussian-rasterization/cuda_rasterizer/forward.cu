@@ -442,14 +442,14 @@ __global__ void __launch_bounds__(BLOCK_X *BLOCK_Y)
       {
         // C[ch] += features[collected_id[j] * CHANNELS + ch] * alpha * T;
         float featureVal = features[collected_id[j] * CHANNELS + ch]; // check the original range of value (min, max)
-        if (featureVal < *minFeatureVal)
-        {
-          *minFeatureVal = featureVal;
-        }
-        else if (featureVal > *maxFeatureVal)
-        {
-          *maxFeatureVal = featureVal;
-        }
+        // if (featureVal < *minFeatureVal)
+        // {
+        //   *minFeatureVal = featureVal;
+        // }
+        // else if (featureVal > *maxFeatureVal)
+        // {
+        //   *maxFeatureVal = featureVal;
+        // }
         // log conversion
         float tmp = featureVal / 2.0f;
         float linearVal = (expf(tmp) - 1) / (2.71828f - 1);
