@@ -311,7 +311,9 @@ int CudaRasterizer::Rasterizer::forward(
                  tile_grid,
                  geomState.tiles_touched,
                  prefiltered,
-                 antialiasing),
+                 antialiasing,
+                minFeatureVal,
+                maxFeatureVal),
              debug)
 
   // Compute prefix sum over full list of touched tile counts by Gaussians

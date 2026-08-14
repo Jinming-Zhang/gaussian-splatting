@@ -74,19 +74,6 @@ RasterizeGaussiansCUDA(
   const int P = means3D.size(0);
   const int H = image_height;
   const int W = image_width;
-  // const int NoR = reflect_factor.size(0);
-  // const int WidthR = reflect_factor.size(1);
-  // float val = 0.001;
-  // for(int i = 0; i < P; ++i)
-  // {
-
-  // reflect_factor[i][0] = val;
-  // ++val;
-  // reflect_factor[i][1] = val;
-  // ++val;
-  // reflect_factor[i][2] = val;
-  // ++val;
-  // }
 
   auto int_opts = means3D.options().dtype(torch::kInt32);
   auto float_opts = means3D.options().dtype(torch::kFloat32);

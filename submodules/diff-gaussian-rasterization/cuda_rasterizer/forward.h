@@ -48,7 +48,9 @@ namespace FORWARD
                   const dim3 grid,
                   uint32_t *tiles_touched,
                   bool prefiltered,
-                  bool antialiasing);
+                  bool antialiasing,
+                  float *minFeatureVal,
+                  float *maxFeatureVal);
 
   // Main rasterization method.
   void render(

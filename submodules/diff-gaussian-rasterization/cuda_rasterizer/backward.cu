@@ -601,7 +601,7 @@ __global__ void __launch_bounds__(BLOCK_X *BLOCK_Y)
 
         const float dL_dchannel = dL_dpixel[ch];
         // dL_dalpha += (c - accum_rec[ch]) * dL_dchannel; // this is original code
-        dL_dalpha += (c * r - accum_rec[ch]) * dL_dchannel; // this is original code
+        dL_dalpha += (c * r - accum_rec[ch]) * dL_dchannel; 
         // Update the gradients w.r.t. color of the Gaussian.
         // Atomic, since this pixel is just one of potentially
         // many that were affected by this Gaussian.
