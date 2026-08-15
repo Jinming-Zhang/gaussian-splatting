@@ -202,7 +202,8 @@ class GaussianModel:
         self.denom = torch.zeros((self.get_xyz.shape[0], 1), device="cuda")
         # r_learning_rate = training_args.feature_lr/20
         r_learning_rate = training_args.feature_lr
-        f_learning_rate = training_args.feature_lr / 20
+        f_learning_rate = training_args.feature_lr
+        # f_learning_rate = training_args.feature_lr / 20
 
         l = [
             {'params': [self._xyz], 'lr': training_args.position_lr_init * self.spatial_lr_scale, "name": "xyz"},
