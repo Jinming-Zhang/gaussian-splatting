@@ -162,15 +162,15 @@ class GaussianModel:
         fused_point_cloud = torch.tensor(np.asarray(pcd.points)).float().cuda()
         fused_color = RGB2SH(torch.tensor(np.asarray(pcd.colors)).float().cuda())
         features = torch.zeros((fused_color.shape[0], 3, (self.max_sh_degree + 1) ** 2)).float().cuda()
-        features[:, :3, 0 ] = fused_color
-        features[:, 3:, 1:] = 0.0
-
-        # initial_features = torch.ones((fused_point_cloud.shape[0],3), dtype=torch.float, device="cuda")
-        # initial_features = RGB2SH(initial_features)
-        # features[:, :3, 0 ] = initial_features
+        # features[:, :3, 0 ] = fused_color
         # features[:, 3:, 1:] = 0.0
+
+        initial_features = torch.ones((fused_point_cloud.shape[0],3), dtype=torch.float, device="cuda")
+        initial_features = RGB2SH(initial_features)
+        features[:, :3, 0 ] = initial_features
+        features[:, 3:, 1:] = 0.0
         reflect_factor = torch.ones((fused_point_cloud.shape[0],3), dtype=torch.float, device="cuda")
-        # reflect_factor = fused_point_cloud
+        reflect_factor = fused_point_cloud
 
         print("Number of points at initialisation : ", fused_point_cloud.shape[0])
 
@@ -202,8 +202,8 @@ class GaussianModel:
         self.denom = torch.zeros((self.get_xyz.shape[0], 1), device="cuda")
         # r_learning_rate = training_args.feature_lr/20
         r_learning_rate = training_args.feature_lr
-        f_learning_rate = training_args.feature_lr
-        # f_learning_rate = training_args.feature_lr / 20
+        # f_learning_rate = training_args.feature_lr
+        f_learning_rate = training_args.feature_lr / 20
 
         l = [
             {'params': [self._xyz], 'lr': training_args.position_lr_init * self.spatial_lr_scale, "name": "xyz"},
