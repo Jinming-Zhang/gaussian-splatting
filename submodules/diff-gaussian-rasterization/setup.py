@@ -26,16 +26,7 @@ setup(
             "cuda_rasterizer/backward.cu",
             "rasterize_points.cu",
             "ext.cpp"],
-            extra_compile_args={
-                "nvcc": [
-                    "-I" + os.path.join(os.path.dirname(os.path.abspath(__file__)), "third_party/glm/"),
-                    "-g",            # host-side debug info
-                    "-G",            # device-side debug info (disables GPU optimizations)
-                    "-lineinfo",     # map symbols to original .cu files instead of nvcc temp files
-                    "-O0",           # disable host optimizations
-                ],
-                "cxx": ["-g", "-O0"],
-            })
+            extra_compile_args={"nvcc": ["-I" + os.path.join(os.path.dirname(os.path.abspath(__file__)), "third_party/glm/")]})
         ],
     cmdclass={
         'build_ext': BuildExtension
